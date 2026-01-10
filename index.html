@@ -8,19 +8,33 @@
     :root{--bg:#0b1220;--card:#0f1a33;--line:#1f2a44;--txt:#e6edf7;--mut:#9fb0d0;--ok:#30d158;--bad:#ff453a;--btn:#2f6bff;}
     body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial}
     header{padding:14px 16px;background:#061027;border-bottom:1px solid var(--line);font-weight:700}
-    .wrap{padding:14px;max-width:980px;margin:0 auto}
+    .wrap{padding:14px;max-width:1100px;margin:0 auto}
     .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
     h3{margin:0 0 10px;font-size:16px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     input,select,textarea{background:#07122b;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:15px;flex:1;min-width:140px}
     textarea{min-height:110px}
-    button{background:var(--btn);border:none;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;font-size:15px}
+    button{background:var(--btn);border:none;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;cursor:pointer}
     button.secondary{background:#13224a;border:1px solid var(--line);color:var(--txt)}
+    button.danger{background:#3a1020;border:1px solid #6a2233}
     table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
     th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:center;vertical-align:top}
     .mut{color:var(--mut)}
     .ok{color:var(--ok)} .bad{color:var(--bad)}
     .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);font-size:12px}
+    .small{font-size:12px;line-height:1.25}
+    .split{display:flex;gap:10px;flex-wrap:wrap}
+    .col{flex:1;min-width:300px}
+    .newsItem{padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#0a1430}
+    .newsItem a{color:#bcd1ff;text-decoration:none}
+    .newsItem a:hover{text-decoration:underline}
+
+    /* Modal */
+    .modalMask{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
+    .modal{width:min(720px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+    .modal h4{margin:0 0 10px}
+    .modal .row{margin-top:10px}
+    .modal .footer{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
   </style>
 </head>
 <body>
@@ -45,7 +59,7 @@
         <option value="US_TICKER">海外标的（Ticker）</option>
       </select>
       <input id="code" placeholder="基金代码/Ticker：025167 / SPY" />
-      <input id="amount" type="number" placeholder="持有金额（元或美元都可）" />
+      <input id="amount" type="number" placeholder="持有金额（元或美元）" />
       <input id="cost" type="number" placeholder="成本净值/成本价（可选）" />
       <button onclick="add()">添加</button>
     </div>
@@ -58,16 +72,52 @@
     <table>
       <thead>
         <tr>
-          <th>类型</th><th>代码</th><th>名称</th><th>现价</th><th>市值</th><th>盈亏</th><th>盈亏率</th><th>仓位</th>
+          <th>类型</th><th>代码</th><th>名称</th><th>现价</th><th>市值</th><th>盈亏</th><th>盈亏率</th><th>仓位</th><th>操作</th>
         </tr>
       </thead>
       <tbody id="tb"></tbody>
     </table>
+
     <div class="mut" id="sum" style="margin-top:10px;"></div>
   </div>
 
   <div class="card">
-    <h3>③ AI 决策（OpenAI-compatible 方式）</h3>
+    <h3>③ 新闻与政策（自动随持仓变化）</h3>
+
+    <div class="split">
+      <div class="col">
+        <div class="row">
+          <button class="secondary" onclick="buildNewsPlan()">🧠 自动生成关键词</button>
+          <button onclick="fetchNews()">🗞 抓取新闻</button>
+        </div>
+        <div class="mut small" style="margin-top:8px;">
+          关键词来自三层：A 宏观固定 + B 行业主题（自动） + C 标的强相关（自动）。你换仓后再次点“自动生成关键词”即可更新。
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="mut">当前主题（自动）：</div>
+          <div id="themes" class="small"></div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="mut">关键词池（可手动增删，用逗号分隔）：</div>
+          <input id="newsKeywords" placeholder="例如：美联储,降息,AI,半导体,医药,医保,港股科技..." />
+          <div class="row" style="margin-top:8px;">
+            <button class="secondary" onclick="saveNewsKeywords()">保存关键词</button>
+            <button class="secondary" onclick="resetNewsKeywords()">重置为自动关键词</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="mut">新闻列表（最近）：</div>
+        <div id="newsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>④ AI 决策（OpenAI-compatible 方式）</h3>
     <div class="row">
       <input id="aiBase" placeholder="AI BaseUrl，例如：https://api.openai.com/v1 或你的网关" />
       <input id="aiKey" placeholder="API Key（仅保存在本机）" />
@@ -75,32 +125,76 @@
     </div>
     <div class="row" style="margin-top:10px;">
       <button class="secondary" onclick="saveAI()">保存AI配置</button>
-      <button onclick="runAI()">🤖 生成今日动作 + 3-6个月板块推荐</button>
+      <button onclick="runAI()">🤖 今日动作 + 3-6个月板块推荐（含新闻影响）</button>
     </div>
     <textarea id="aiOut" placeholder="AI 输出会在这里..."></textarea>
-    <div class="mut">提示：AI Key 不写进代码；只存在你的浏览器本地存储中。</div>
+    <div class="mut small">提示：AI Key 不写进代码；只存在你的浏览器本地存储中。</div>
   </div>
 
 </div>
 
+<!-- Modal -->
+<div id="mask" class="modalMask" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h4>编辑持仓</h4>
+    <div class="row">
+      <select id="mType">
+        <option value="CN_FUND">国内基金（6位）</option>
+        <option value="US_TICKER">海外标的（Ticker）</option>
+      </select>
+      <input id="mCode" placeholder="代码" />
+    </div>
+    <div class="row">
+      <input id="mAmount" type="number" placeholder="持有金额" />
+      <input id="mCost" type="number" placeholder="成本净值/成本价（可选）" />
+    </div>
+    <div class="mut small" id="mHint" style="margin-top:8px;"></div>
+    <div class="footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button onclick="saveModal()">保存修改</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  const LS = { backend:"ic_backend", pos:"ic_positions", ai:"ic_ai" };
+  const LS = {
+    backend:"ic_backend",
+    pos:"ic_positions",
+    ai:"ic_ai",
+    newsKeywords:"ic_news_keywords",
+    newsPlan:"ic_news_plan",
+    newsCache:"ic_news_cache"
+  };
   const $ = (id)=>document.getElementById(id);
 
+  let editingIndex = -1;
+
   function load() {
-    // 默认填你的后端地址
     const defaultBackend = "https://invest-copilot-backend.onrender.com";
     const b = localStorage.getItem(LS.backend) || defaultBackend;
     $("backend").value = b;
     localStorage.setItem(LS.backend, b);
 
     window.positions = JSON.parse(localStorage.getItem(LS.pos) || "[]");
+
     const ai = JSON.parse(localStorage.getItem(LS.ai) || "{}");
     $("aiBase").value = ai.baseUrl || "";
     $("aiKey").value  = ai.apiKey || "";
     $("aiModel").value= ai.model || "";
+
+    // 恢复新闻关键词/缓存
+    const kw = localStorage.getItem(LS.newsKeywords) || "";
+    if (kw) $("newsKeywords").value = kw;
+
+    const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
+    if (plan) renderThemes(plan.themes || []);
+    const cache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
+    if (cache) renderNews(cache.items || []);
+
     render();
   }
+
+  function persist(){ localStorage.setItem(LS.pos, JSON.stringify(window.positions)); }
 
   function saveBackend(){
     localStorage.setItem(LS.backend, $("backend").value.trim());
@@ -130,7 +224,6 @@
       type, code, amount, cost,
       name:"",
       price:null, mv:null, pnl:null, pnlPct:null,
-      // 国内基金附加字段（用于展示）
       _nav:null, _navDate:null, _estNav:null, _estPct:null, _time:null
     });
     persist(); render();
@@ -142,16 +235,63 @@
     persist(); render();
   }
 
-  function persist(){ localStorage.setItem(LS.pos, JSON.stringify(window.positions)); }
+  function openEdit(i){
+    editingIndex = i;
+    const p = window.positions[i];
+    $("mType").value = p.type;
+    $("mCode").value = p.code;
+    $("mAmount").value = p.amount ?? "";
+    $("mCost").value = p.cost ?? "";
+    $("mHint").textContent = `当前名称：${p.name || "未拉取"}｜当前现价：${p.price ?? "未拉取"}｜盈亏率：${p.pnlPct!=null ? p.pnlPct.toFixed(2)+"%" : "未计算"}`;
+    $("mask").style.display = "flex";
+  }
+
+  function closeModal(e){
+    if (e && e.target && e.target.id !== "mask") return;
+    $("mask").style.display = "none";
+    editingIndex = -1;
+  }
+
+  function saveModal(){
+    if (editingIndex < 0) return;
+    const p = window.positions[editingIndex];
+
+    const type = $("mType").value;
+    const code = $("mCode").value.trim();
+    const amount = Number($("mAmount").value);
+    const cost = $("mCost").value ? Number($("mCost").value) : null;
+
+    if(!code || !amount) return alert("请填代码 + 金额");
+
+    // 修改基础字段
+    p.type = type;
+    p.code = code;
+    p.amount = amount;
+    p.cost = cost;
+
+    // 清掉旧的实时字段（避免误导）
+    p.name = "";
+    p.price = p.mv = p.pnl = p.pnlPct = null;
+    p._nav = p._navDate = p._estNav = p._estPct = p._time = null;
+
+    persist(); render();
+    closeModal();
+  }
+
+  function deleteOne(i){
+    const p = window.positions[i];
+    if(!confirm(`确定删除：${p.code} ${p.name || ""} ?`)) return;
+    window.positions.splice(i,1);
+    persist(); render();
+  }
 
   function render(){
     const tb = $("tb"); tb.innerHTML = "";
-
     const totalAmount = window.positions.reduce((s,p)=>s + (p.amount||0), 0);
     const totalMV = window.positions.reduce((s,p)=>s + (p.mv||0), 0);
     const totalPNL = window.positions.reduce((s,p)=>s + (p.pnl||0), 0);
 
-    window.positions.forEach(p=>{
+    window.positions.forEach((p,i)=>{
       const tr = document.createElement("tr");
       const pnlCls = (p.pnlPct ?? 0) >= 0 ? "ok" : "bad";
       const w = totalMV ? (p.mv||0)/totalMV*100 : 0;
@@ -159,7 +299,7 @@
       const priceCell = (p.type === "CN_FUND")
         ? `
           ${p.price ?? "-"}
-          <div class="mut" style="font-size:12px; margin-top:2px; line-height:1.25;">
+          <div class="mut small" style="margin-top:2px;">
             净值: ${(typeof p._nav === "number" ? p._nav : "-")}（${p._navDate || "-"}）
             <br/>
             估值: ${(typeof p._estNav === "number" ? p._estNav : "-")}（${(typeof p._estPct === "number" ? p._estPct : "-")}%）${p._time ? " " + p._time : ""}
@@ -176,6 +316,10 @@
         <td class="${pnlCls}">${p.pnl!=null ? p.pnl.toFixed(2) : "-"}</td>
         <td class="${pnlCls}">${p.pnlPct!=null ? p.pnlPct.toFixed(2)+"%" : "-"}</td>
         <td>${(w||0).toFixed(1)}%</td>
+        <td>
+          <button class="secondary" onclick="openEdit(${i})">编辑</button>
+          <button class="danger" onclick="deleteOne(${i})">删除</button>
+        </td>
       `;
       tb.appendChild(tr);
     });
@@ -189,18 +333,13 @@
     if(!base) return alert("先填后端地址");
     const api = base.replace(/\/+$/,"");
 
-    // 国内基金：逐个拉（对账模式：默认用单位净值 nav）
+    // 国内基金：默认用单位净值 nav（对账口径）
     for (const p of window.positions){
       if (p.type === "CN_FUND"){
         const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
         const j = await r.json();
-
         p.name = j.name || p.name;
-
-        // ✅ 关键：主现价用单位净值 nav（与你理财软件一致），若 nav 无则退回 estNav
         p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : j.estNav;
-
-        // 保存附加展示字段
         p._nav = (typeof j.nav === "number") ? j.nav : null;
         p._navDate = j.navDate || null;
         p._estNav = (typeof j.estNav === "number") ? j.estNav : null;
@@ -225,7 +364,7 @@
       }
     }
 
-    // 计算：市值/盈亏（用金额估算份额）
+    // 计算市值/盈亏（金额估算份额）
     for (const p of window.positions){
       if (typeof p.price === "number" && p.price > 0){
         const baseCost = (typeof p.cost === "number" && p.cost > 0) ? p.cost : p.price;
@@ -241,12 +380,93 @@
     persist(); render();
   }
 
+  // ---------- NEWS ----------
+  function renderThemes(themes){
+    $("themes").textContent = themes && themes.length ? themes.join(" / ") : "（尚未生成）";
+  }
+
+  async function buildNewsPlan(){
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim();
+    if(!base) return alert("先填后端地址");
+    const api = base.replace(/\/+$/,"");
+
+    // 把当前持仓（含名称）发给后端做关键词计划
+    const payload = window.positions.map(p=>({
+      type:p.type, code:p.code, name:p.name, amount:p.amount
+    }));
+
+    const r = await fetch(`${api}/api/news/plan`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ positions: payload })
+    });
+    const j = await r.json();
+    if (!j.ok) return alert("生成关键词失败：" + (j.error || ""));
+
+    localStorage.setItem(LS.newsPlan, JSON.stringify(j));
+    renderThemes(j.themes || []);
+
+    // 默认把关键词池写入输入框（你仍可手动改）
+    const kw = (j.keywords || []).join(",");
+    $("newsKeywords").value = kw;
+    localStorage.setItem(LS.newsKeywords, kw);
+    alert("✅ 已生成自动关键词（可手动修改后再抓新闻）");
+  }
+
+  function saveNewsKeywords(){
+    const kw = $("newsKeywords").value.trim();
+    localStorage.setItem(LS.newsKeywords, kw);
+    alert("✅ 关键词已保存");
+  }
+
+  function resetNewsKeywords(){
+    const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
+    if (!plan) return alert("先点“自动生成关键词”");
+    const kw = (plan.keywords || []).join(",");
+    $("newsKeywords").value = kw;
+    localStorage.setItem(LS.newsKeywords, kw);
+  }
+
+  function renderNews(items){
+    const box = $("newsList");
+    box.innerHTML = "";
+    if (!items || !items.length) {
+      box.innerHTML = `<div class="mut small">暂无新闻。先生成关键词，再抓取新闻。</div>`;
+      return;
+    }
+    for (const it of items) {
+      const div = document.createElement("div");
+      div.className = "newsItem";
+      div.innerHTML = `
+        <div class="small"><span class="pill">${it.keyword || "-"}</span> <span class="mut">${it.pubDate || ""}</span></div>
+        <div style="margin-top:6px;"><a href="${it.link}" target="_blank" rel="noreferrer">${it.title}</a></div>
+        <div class="mut small" style="margin-top:6px;">${(it.description || "").slice(0, 180)}</div>
+      `;
+      box.appendChild(div);
+    }
+  }
+
+  async function fetchNews(){
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim();
+    if(!base) return alert("先填后端地址");
+    const api = base.replace(/\/+$/,"");
+
+    const kw = (localStorage.getItem(LS.newsKeywords) || $("newsKeywords").value || "").trim();
+    if (!kw) return alert("先生成或填写关键词");
+
+    $("newsList").innerHTML = `<div class="mut small">抓取中…（第一次可能慢一点）</div>`;
+
+    const r = await fetch(`${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=12`);
+    const j = await r.json();
+    if (!j.ok) return alert("抓取新闻失败：" + (j.error || ""));
+
+    localStorage.setItem(LS.newsCache, JSON.stringify(j));
+    renderNews(j.items || []);
+  }
+
+  // ---------- AI ----------
   function saveAI(){
-    const cfg = {
-      baseUrl:$("aiBase").value.trim(),
-      apiKey:$("aiKey").value.trim(),
-      model:$("aiModel").value.trim()
-    };
+    const cfg = { baseUrl:$("aiBase").value.trim(), apiKey:$("aiKey").value.trim(), model:$("aiModel").value.trim() };
     localStorage.setItem(LS.ai, JSON.stringify(cfg));
     $("aiOut").value = "✅ AI 配置已保存（仅本机）。";
   }
@@ -259,15 +479,29 @@
     const cfg = JSON.parse(localStorage.getItem(LS.ai) || "{}");
     if(!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("先填写 AI BaseUrl / Key / Model 并保存");
 
-    const payload = window.positions.map(p=>({
+    // 取持仓（含盈亏）
+    const holdings = window.positions.map(p=>({
       type:p.type, code:p.code, name:p.name, amount:p.amount, cost:p.cost,
       price:p.price, mv:p.mv, pnl:p.pnl, pnlPct:p.pnlPct,
       nav:p._nav, navDate:p._navDate, estNav:p._estNav, estPct:p._estPct, time:p._time
     }));
 
+    // 取新闻缓存（若没抓过，新闻为空）
+    const newsCache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
+    const newsItems = (newsCache && newsCache.items) ? newsCache.items : [];
+
     const messages = [
-      { role:"system", content:"你是严格的组合风控与操作建议助手。不要编造数据。必须输出：每只标的 今日动作（买/卖/不动）+一句理由；组合风险等级（低/中/高）+总仓位建议；未来3-6个月最看好板块Top1 + 推荐基金/ETF代码 + 原因。"},
-      { role:"user", content:`我的持仓与价格/盈亏（JSON）：\n${JSON.stringify(payload, null, 2)}\n\n按要求输出，格式清晰。` }
+      { role:"system", content:
+`你是严格的组合风控与操作建议助手。不要编造数据。
+必须输出四部分：
+1) 组合风险等级（低/中/高）+ 总仓位建议（例如70%）
+2) 每只持仓：今日动作（买/卖/不动）+一句理由
+3) 新闻/政策影响：从提供的新闻中提炼3-5条要点，并指出对每个主题/持仓的潜在影响（利好/利空/不确定）
+4) 未来3-6个月：最看好板块Top1 + 推荐基金/ETF代码 + 原因（结合宏观与新闻）`
+      },
+      { role:"user", content:
+`我的持仓与价格/盈亏（JSON）：\n${JSON.stringify(holdings, null, 2)}\n\n新闻与政策（最多12条）：\n${JSON.stringify(newsItems, null, 2)}\n\n请按要求输出，格式清晰。`
+      }
     ];
 
     $("aiOut").value = "生成中…";
