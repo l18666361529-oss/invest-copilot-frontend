@@ -28,15 +28,21 @@
     .newsItem{padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#0a1430}
     .newsItem a{color:#bcd1ff;text-decoration:none}
     .newsItem a:hover{text-decoration:underline}
-    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);margin-right:6px}
-    .tagBull{color:var(--ok);border-color:rgba(48,209,88,.35)}
-    .tagBear{color:var(--bad);border-color:rgba(255,69,58,.35)}
-    .tagNeu{color:var(--mut)}
-    .tagTheme{color:#c7d7ff;border-color:rgba(199,215,255,.25)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:880px){ .grid2{grid-template-columns:1fr;} }
+    .kv{display:flex;gap:10px;flex-wrap:wrap}
+    .k{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0a1430;flex:1;min-width:210px}
+    .k .v{font-size:20px;font-weight:800;margin-top:6px}
+    .list{margin-top:10px}
+    .li{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0a1430;margin-top:8px}
+    .tag{display:inline-block;margin-left:8px;font-size:12px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;color:var(--mut)}
+    .warn{color:#ffd60a}
+    .sep{height:1px;background:var(--line);margin:10px 0}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
 
     /* Modal */
     .modalMask{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
-    .modal{width:min(720px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+    .modal{width:min(820px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
     .modal h4{margin:0 0 10px}
     .modal .row{margin-top:10px}
     .modal .footer{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
@@ -88,6 +94,7 @@
 
   <div class="card">
     <h3>③ 新闻与政策（自动随持仓变化）</h3>
+
     <div class="split">
       <div class="col">
         <div class="row">
@@ -95,8 +102,7 @@
           <button onclick="fetchNews()">🗞 抓取新闻</button>
         </div>
         <div class="mut small" style="margin-top:8px;">
-          关键词来自三层：A 宏观固定 + B 行业主题（自动） + C 标的强相关（自动）。
-          <br/>已启用：按权重分配配额 + 相关度评分过滤（minScore=2）。
+          关键词来自三层：A 宏观固定 + B 行业主题（自动） + C 标的强相关（自动）。你换仓后再次点“自动生成关键词”即可更新。
         </div>
 
         <div style="margin-top:10px;">
@@ -106,10 +112,13 @@
 
         <div style="margin-top:10px;">
           <div class="mut">关键词池（可手动增删，用逗号分隔）：</div>
-          <input id="newsKeywords" placeholder="例如：美联储,降息,AI算力,半导体,恒生科技,科创50..." />
+          <input id="newsKeywords" placeholder="例如：美联储,降息,AI,半导体,医药,医保,港股科技..." />
           <div class="row" style="margin-top:8px;">
             <button class="secondary" onclick="saveNewsKeywords()">保存关键词</button>
             <button class="secondary" onclick="resetNewsKeywords()">重置为自动关键词</button>
+          </div>
+          <div class="mut small" style="margin-top:8px;">
+            提醒：新闻不需要 AI Key。AI Key 仅用于“AI 决策”按钮。
           </div>
         </div>
       </div>
@@ -124,21 +133,69 @@
   <div class="card">
     <h3>④ AI 决策（OpenAI-compatible 方式）</h3>
     <div class="row">
-      <input id="aiBase" placeholder="AI BaseUrl，例如：https://api.openai.com/v1 或你的网关" />
+      <input id="aiBase" placeholder="AI BaseUrl，例如：https://api.openai.com/v1 或你的网关（xAI: https://api.x.ai/v1）" />
       <input id="aiKey" placeholder="API Key（仅保存在本机）" />
-      <input id="aiModel" placeholder="模型名，例如：gpt-5-mini / grok-xxx / gemini-xxx" />
+      <input id="aiModel" placeholder="模型名，例如：grok-4-1-fast-reasoning / grok-3 / gemini-xxx" />
     </div>
     <div class="row" style="margin-top:10px;">
       <button class="secondary" onclick="saveAI()">保存AI配置</button>
-      <button onclick="runAI()">🤖 今日动作 + 3-6个月板块推荐（含新闻影响）</button>
+      <button onclick="runAI()">🤖 今日动作 + 3-6个月板块推荐（含风控/技术/新闻）</button>
     </div>
     <textarea id="aiOut" placeholder="AI 输出会在这里..."></textarea>
     <div class="mut small">提示：AI Key 不写进代码；只存在你的浏览器本地存储中。</div>
   </div>
 
+  <div class="card">
+    <h3>⑤ 风控检查（组合红黄灯）</h3>
+    <div class="row">
+      <button onclick="refreshRisk()">🛡 刷新风控检查</button>
+      <button class="secondary" onclick="refreshRisk(true)">🛡 刷新并展开详情</button>
+    </div>
+
+    <div class="kv" style="margin-top:10px;">
+      <div class="k">
+        <div class="mut">风险等级</div>
+        <div id="riskLevel" class="v">-</div>
+      </div>
+      <div class="k">
+        <div class="mut">建议总仓位</div>
+        <div id="riskPos" class="v">-</div>
+      </div>
+      <div class="k">
+        <div class="mut">主题集中度 Top1</div>
+        <div id="riskTheme" class="v">-</div>
+      </div>
+    </div>
+
+    <div id="riskList" class="list"></div>
+  </div>
+
+  <div class="card">
+    <h3>⑥ 技术指标 / 趋势（每只持仓）</h3>
+    <div class="row">
+      <button onclick="refreshTA()">📊 刷新技术指标</button>
+      <button class="secondary" onclick="clearTA()">清空技术缓存</button>
+    </div>
+    <div class="mut small" style="margin-top:8px;">
+      国内基金：使用东财净值序列计算（更平滑）；海外Ticker：使用 stooq 日线收盘计算。
+    </div>
+    <div id="taList" class="list"></div>
+  </div>
+
+  <div class="card">
+    <h3>⑦ 板块雷达（提前发现上升苗头）</h3>
+    <div class="row">
+      <button onclick="refreshRadar()">🧭 刷新板块雷达</button>
+    </div>
+    <div class="mut small" style="margin-top:8px;">
+      这是“候选板块池”自动打分的 Top3（趋势 + 动量 + RSI），用于辅助你发现最近有抬头迹象的方向。
+    </div>
+    <div id="radarList" class="list"></div>
+  </div>
+
 </div>
 
-<!-- Modal -->
+<!-- Modal：编辑持仓 -->
 <div id="mask" class="modalMask" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h4>编辑持仓</h4>
@@ -168,30 +225,15 @@
     ai:"ic_ai",
     newsKeywords:"ic_news_keywords",
     newsPlan:"ic_news_plan",
-    newsCache:"ic_news_cache"
+    newsCache:"ic_news_cache",
+    taCache:"ic_ta_cache"
   };
   const $ = (id)=>document.getElementById(id);
   let editingIndex = -1;
 
-  function decodeEntities(s){
-    if(!s) return "";
-    return String(s)
-      .replace(/&lt;/g,"<").replace(/&gt;/g,">")
-      .replace(/&amp;/g,"&").replace(/&quot;/g,'"')
-      .replace(/&#39;/g,"'").replace(/&nbsp;/g," ");
-  }
-  function stripTags(s){
-    if(!s) return "";
-    return String(s)
-      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi,"")
-      .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi,"")
-      .replace(/<[^>]+>/g," ")
-      .replace(/\s+/g," ")
-      .trim();
-  }
-  function cleanDesc(s){
-    // 后端已尽量干净，但再兜底：把残余 HTML/实体清掉
-    return stripTags(decodeEntities(s)).slice(0, 180);
+  function apiBase() {
+    const base = (localStorage.getItem(LS.backend) || $("backend").value || "").trim();
+    return base.replace(/\/+$/,"");
   }
 
   function load() {
@@ -211,12 +253,14 @@
     if (kw) $("newsKeywords").value = kw;
 
     const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
-    if (plan) renderThemes(plan.themes || [], plan.themeWeights || null);
-
+    if (plan) renderThemes(plan.themes || []);
     const cache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
     if (cache) renderNews(cache.items || []);
 
     render();
+    refreshRisk();     // 自动刷新一次风控
+    renderTAFromCache();
+    refreshRadar();    // 自动刷新一次雷达
   }
 
   function persist(){ localStorage.setItem(LS.pos, JSON.stringify(window.positions)); }
@@ -227,10 +271,10 @@
   }
 
   async function ping(){
-    const base = $("backend").value.trim();
+    const base = apiBase();
     if(!base) return alert("先填写后端地址");
     try{
-      const r = await fetch(base.replace(/\/+$/,"") + "/health");
+      const r = await fetch(base + "/health");
       const j = await r.json();
       $("pingResult").textContent = j.ok ? "✅ 后端服务正常" : "⚠️ 后端异常";
     }catch(e){
@@ -249,7 +293,8 @@
       type, code, amount, cost,
       name:"",
       price:null, mv:null, pnl:null, pnlPct:null,
-      _nav:null, _navDate:null, _estNav:null, _estPct:null, _time:null
+      _nav:null, _navDate:null, _estNav:null, _estPct:null, _time:null,
+      theme:null
     });
     persist(); render();
   }
@@ -258,6 +303,11 @@
     if(!confirm("确定清空所有持仓？")) return;
     window.positions = [];
     persist(); render();
+    clearTA();
+    $("riskList").innerHTML = "";
+    $("riskLevel").textContent = "-";
+    $("riskPos").textContent = "-";
+    $("riskTheme").textContent = "-";
   }
 
   function openEdit(i){
@@ -293,9 +343,11 @@
     p.amount = amount;
     p.cost = cost;
 
+    // 清掉旧的实时字段
     p.name = "";
     p.price = p.mv = p.pnl = p.pnlPct = null;
     p._nav = p._navDate = p._estNav = p._estPct = p._time = null;
+    p.theme = null;
 
     persist(); render();
     closeModal();
@@ -352,41 +404,49 @@
   }
 
   async function refreshAll(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim();
-    if(!base) return alert("先填后端地址");
-    const api = base.replace(/\/+$/,"");
+    const api = apiBase();
+    if(!api) return alert("先填后端地址");
 
+    // 国内基金
     for (const p of window.positions){
       if (p.type === "CN_FUND"){
-        const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
-        const j = await r.json();
-        if (j.error) { console.warn("CN_FUND fetch error", p.code, j); continue; }
-
-        p.name = j.name || p.name;
-        p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : j.estNav;
-        p._nav = (typeof j.nav === "number") ? j.nav : null;
-        p._navDate = j.navDate || null;
-        p._estNav = (typeof j.estNav === "number") ? j.estNav : null;
-        p._estPct = (typeof j.estPct === "number") ? j.estPct : null;
-        p._time = j.time || null;
-      }
-    }
-
-    const gl = window.positions.filter(p=>p.type==="US_TICKER");
-    if (gl.length){
-      const symbols = gl.map(p=>p.code).join(",");
-      const r = await fetch(`${api}/api/gl/quote?symbols=${encodeURIComponent(symbols)}`);
-      const j = await r.json();
-      const map = new Map((j.quotes||[]).map(q=>[q.symbol, q]));
-      for (const p of gl){
-        const q = map.get(p.code.toUpperCase()) || map.get(p.code);
-        if(q){
-          p.name = q.name || p.name;
-          p.price = q.price;
+        try{
+          const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
+          const j = await r.json();
+          p.name = j.name || p.name;
+          p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : j.estNav;
+          p._nav = (typeof j.nav === "number") ? j.nav : null;
+          p._navDate = j.navDate || null;
+          p._estNav = (typeof j.estNav === "number") ? j.estNav : null;
+          p._estPct = (typeof j.estPct === "number") ? j.estPct : null;
+          p._time = j.time || null;
+        }catch(e){
+          console.warn("cn fund fetch failed", p.code, e);
         }
       }
     }
 
+    // 海外批量
+    const gl = window.positions.filter(p=>p.type==="US_TICKER");
+    if (gl.length){
+      const symbols = gl.map(p=>p.code).join(",");
+      try{
+        const r = await fetch(`${api}/api/gl/quote?symbols=${encodeURIComponent(symbols)}`);
+        const j = await r.json();
+        const map = new Map((j.quotes||[]).map(q=>[q.symbol, q]));
+        for (const p of gl){
+          const q = map.get(p.code.toUpperCase());
+          if(q){
+            p.name = q.name || p.name;
+            p.price = q.price;
+          }
+        }
+      }catch(e){
+        console.warn("gl quote fetch failed", e);
+      }
+    }
+
+    // 计算市值/盈亏（金额估算份额）
     for (const p of window.positions){
       if (typeof p.price === "number" && p.price > 0){
         const baseCost = (typeof p.cost === "number" && p.cost > 0) ? p.cost : p.price;
@@ -400,30 +460,17 @@
     }
 
     persist(); render();
+    await refreshRisk();   // 刷完价格后刷新风控
   }
 
   // ---------- NEWS ----------
-  function renderThemes(themes, themeWeights){
-    if (!themes || !themes.length) {
-      $("themes").textContent = "（尚未生成）";
-      return;
-    }
-    if (!themeWeights) {
-      $("themes").textContent = themes.join(" / ");
-      return;
-    }
-    const parts = themes.map(t=>{
-      const w = themeWeights[t];
-      if (typeof w === "number") return `${t} ${(w*100).toFixed(1)}%`;
-      return t;
-    });
-    $("themes").textContent = parts.join(" / ");
+  function renderThemes(themes){
+    $("themes").textContent = themes && themes.length ? themes.join(" / ") : "（尚未生成）";
   }
 
   async function buildNewsPlan(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim();
-    if(!base) return alert("先填后端地址");
-    const api = base.replace(/\/+$/,"");
+    const api = apiBase();
+    if(!api) return alert("先填后端地址");
 
     const payload = window.positions.map(p=>({
       type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
@@ -438,13 +485,12 @@
     if (!j.ok) return alert("生成关键词失败：" + (j.error || ""));
 
     localStorage.setItem(LS.newsPlan, JSON.stringify(j));
-    renderThemes(j.themes || [], j.themeWeights || null);
+    renderThemes(j.themes || []);
 
     const kw = (j.keywords || []).join(",");
     $("newsKeywords").value = kw;
     localStorage.setItem(LS.newsKeywords, kw);
-
-    alert("✅ 已生成自动关键词（更偏向具体投资词）");
+    alert("✅ 已生成自动关键词（可手动修改后再抓新闻）");
   }
 
   function saveNewsKeywords(){
@@ -461,20 +507,6 @@
     localStorage.setItem(LS.newsKeywords, kw);
   }
 
-  function tagHtml(it){
-    const s = (it.sentiment || "neutral").toLowerCase();
-    const themes = Array.isArray(it.themes) ? it.themes : [];
-    const score = (typeof it.score === "number") ? it.score : null;
-
-    let sentimentTag = `<span class="tag tagNeu">中性</span>`;
-    if (s === "bullish") sentimentTag = `<span class="tag tagBull">利好</span>`;
-    if (s === "bearish") sentimentTag = `<span class="tag tagBear">利空</span>`;
-
-    const themeTags = themes.slice(0,3).map(t=>`<span class="tag tagTheme">${t}</span>`).join("");
-    const scoreTag = (score!=null) ? `<span class="tag tagNeu">score:${score}</span>` : "";
-    return `${sentimentTag}${themeTags}${scoreTag}`;
-  }
-
   function renderNews(items){
     const box = $("newsList");
     box.innerHTML = "";
@@ -483,32 +515,38 @@
       return;
     }
     for (const it of items) {
+      const s = (it.sentiment || "neutral");
+      const tag = s==="bullish" ? `<span class="tag ok">利好</span>` : s==="bearish" ? `<span class="tag bad">利空</span>` : `<span class="tag">中性</span>`;
+      const th = (it.themes && it.themes.length) ? `<span class="tag">${it.themes.join("/")}</span>` : "";
+      const score = (typeof it.score==="number") ? `<span class="tag mono">score:${it.score}</span>` : "";
       const div = document.createElement("div");
       div.className = "newsItem";
       div.innerHTML = `
-        <div class="small">${tagHtml(it)} <span class="mut">${it.pubDate || ""}</span></div>
+        <div class="small">
+          <span class="pill">${it.keyword || "-"}</span>
+          <span class="mut"> ${it.pubDate || ""}</span>
+          ${tag} ${th} ${score}
+        </div>
         <div style="margin-top:6px;"><a href="${it.link}" target="_blank" rel="noreferrer">${it.title}</a></div>
-        <div class="mut small" style="margin-top:6px;">${cleanDesc(it.description || "")}</div>
-        <div class="mut small" style="margin-top:6px;">关键词：${it.keyword || "-"}</div>
+        <div class="mut small" style="margin-top:6px;">${(it.description || "").slice(0, 180)}</div>
       `;
       box.appendChild(div);
     }
   }
 
   async function fetchNews(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim();
-    if(!base) return alert("先填后端地址");
-    const api = base.replace(/\/+$/,"");
+    const api = apiBase();
+    if(!api) return alert("先填后端地址");
 
     const kw = (localStorage.getItem(LS.newsKeywords) || $("newsKeywords").value || "").trim();
     if (!kw) return alert("先生成或填写关键词");
 
-    $("newsList").innerHTML = `<div class="mut small">抓取中…</div>`;
+    $("newsList").innerHTML = `<div class="mut small">抓取中…（第一次可能慢一点）</div>`;
 
     const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
-    const weights = plan?.weights ? encodeURIComponent(JSON.stringify(plan.weights)) : "";
-    const url = `${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=12&minScore=2${weights ? `&weights=${weights}` : ""}`;
+    const weights = plan && plan.weights ? encodeURIComponent(JSON.stringify(plan.weights)) : "";
 
+    const url = `${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=12&minScore=2${weights?`&weights=${weights}`:""}`;
     const r = await fetch(url);
     const j = await r.json();
     if (!j.ok) return alert("抓取新闻失败：" + (j.error || ""));
@@ -525,9 +563,8 @@
   }
 
   async function runAI(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim();
-    if(!base) return alert("先填后端地址");
-    const api = base.replace(/\/+$/,"");
+    const api = apiBase();
+    if(!api) return alert("先填后端地址");
 
     const cfg = JSON.parse(localStorage.getItem(LS.ai) || "{}");
     if(!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("先填写 AI BaseUrl / Key / Model 并保存");
@@ -535,40 +572,47 @@
     const holdings = window.positions.map(p=>({
       type:p.type, code:p.code, name:p.name, amount:p.amount, cost:p.cost,
       price:p.price, mv:p.mv, pnl:p.pnl, pnlPct:p.pnlPct,
-      nav:p._nav, navDate:p._navDate, estNav:p._estNav, estPct:p._estPct, time:p._time
+      nav:p._nav, navDate:p._navDate, estNav:p._estNav, estPct:p._estPct, time:p._time,
+      theme:p.theme
     }));
 
     const newsCache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
     const newsItems = (newsCache && newsCache.items) ? newsCache.items : [];
 
-    // ✅ 调后端 brief：让 AI 更贴合
-    let newsBrief = "";
+    // 取风控
+    let risk = null;
     try{
-      const br = await fetch(`${api}/api/news/brief`, {
+      const rr = await fetch(`${api}/api/risk/check`, {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ positions: holdings, items: newsItems })
+        body: JSON.stringify({ positions: holdings })
       });
-      const bj = await br.json();
-      if (bj.ok) newsBrief = bj.briefText || "";
-    }catch(e){
-      console.warn("news brief failed", e);
-    }
+      risk = await rr.json();
+    }catch{}
+
+    // 取雷达
+    let radar = null;
+    try{
+      const xr = await fetch(`${api}/api/radar/sectors?top=3`);
+      radar = await xr.json();
+    }catch{}
+
+    // 技术指标（从缓存里取即可；缓存没有就空）
+    const taCache = JSON.parse(localStorage.getItem(LS.taCache) || "{}");
 
     const messages = [
       { role:"system", content:
 `你是严格的组合风控与操作建议助手。不要编造数据。
-必须输出四部分：
-1) 组合风险等级（低/中/高）+ 总仓位建议（例如70%）
-2) 每只持仓：今日动作（买/卖/不动）+一句理由
-3) 新闻/政策影响：从提供的新闻中提炼3-5条要点，并指出对每个主题/持仓的潜在影响（利好/利空/不确定）
-4) 未来3-6个月：最看好板块Top1 + 推荐基金/ETF代码 + 原因（结合宏观与新闻）`
+必须输出五部分：
+1) 组合风险等级（低/中/高）+ 总仓位建议（例如75%），并说明触发风控原因
+2) 每只持仓：今日动作（买/卖/不动）+一句理由（结合盈亏、趋势、新闻）
+3) 技术与趋势：用RSI/MACD/均线/20&60日收益对“偏强/偏弱”做判断（如数据缺失要说明）
+4) 新闻/政策影响：从提供的新闻中提炼3-5条要点，并指出对每个主题/持仓的潜在影响（利好/利空/不确定）
+5) 未来3-6个月：最看好板块Top1 + 推荐标的代码（ETF/基金）+ 原因（结合雷达+宏观+新闻）
+输出要清晰分段，尽量给出可执行的“加仓/减仓幅度”（例如+3% / -5%）。`
       },
       { role:"user", content:
-`我的持仓与价格/盈亏（JSON）：\n${JSON.stringify(holdings, null, 2)}\n
-新闻与政策（最多12条，带情绪/主题标签）：\n${JSON.stringify(newsItems, null, 2)}\n
-自动摘要（请优先参考，避免跑题）：\n${newsBrief}\n
-请按要求输出，格式清晰。`
+`我的持仓（JSON）：\n${JSON.stringify(holdings, null, 2)}\n\n技术指标缓存（JSON，可能为空）：\n${JSON.stringify(taCache, null, 2)}\n\n风控检查（JSON）：\n${JSON.stringify(risk, null, 2)}\n\n板块雷达（JSON）：\n${JSON.stringify(radar, null, 2)}\n\n新闻与政策（最多12条）：\n${JSON.stringify(newsItems, null, 2)}\n\n请按要求输出，格式清晰。`
       }
     ];
 
@@ -589,6 +633,227 @@
     }
   }
 
+  // ---------- 风控 ----------
+  function riskColor(level){
+    if(level==="高") return "bad";
+    if(level==="中") return "warn";
+    return "ok";
+  }
+
+  async function refreshRisk(expand=false){
+    const api = apiBase();
+    if(!api) return;
+
+    const holdings = window.positions.map(p=>({
+      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv, pnlPct:p.pnlPct, theme:p.theme
+    }));
+
+    try{
+      const r = await fetch(`${api}/api/risk/check`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ positions: holdings })
+      });
+      const j = await r.json();
+      if(!j.ok){ $("riskLevel").textContent = "-"; return; }
+
+      $("riskLevel").innerHTML = `<span class="${riskColor(j.level)}">${j.level}</span>`;
+      const posPct = (typeof j.suggestedTotalPosition==="number") ? (j.suggestedTotalPosition*100).toFixed(0)+"%" : "-";
+      $("riskPos").textContent = posPct;
+
+      // 主题top1
+      let topTheme = "-";
+      if (j.themeConcentration) {
+        const pairs = Object.entries(j.themeConcentration).sort((a,b)=>b[1]-a[1]);
+        if (pairs.length) topTheme = `${pairs[0][0]} ${(pairs[0][1]*100).toFixed(0)}%`;
+      }
+      $("riskTheme").textContent = topTheme;
+
+      const box = $("riskList");
+      box.innerHTML = "";
+
+      const addLine = (lvl, msg) => {
+        const div = document.createElement("div");
+        div.className = "li";
+        div.innerHTML = `<div><b>风控</b> <span class="tag ${lvl==="高"?"bad":lvl==="中"?"warn":"ok"}">${lvl}</span></div><div class="mut small" style="margin-top:6px;">${msg}</div>`;
+        box.appendChild(div);
+      };
+
+      const checks = Array.isArray(j.checks)?j.checks:[];
+      const perPos = Array.isArray(j.perPos)?j.perPos:[];
+
+      if (!checks.length && !perPos.length) {
+        box.innerHTML = `<div class="mut small">暂无风控告警。</div>`;
+        return;
+      }
+
+      if (expand){
+        checks.forEach(c=>addLine(c.level, c.msg));
+        perPos.forEach(c=>addLine(c.level, `${c.code}：${c.msg}`));
+      } else {
+        // 默认只显示最严重的3条
+        const combined = [
+          ...checks.map(x=>({level:x.level,msg:x.msg})),
+          ...perPos.map(x=>({level:x.level,msg:`${x.code}：${x.msg}`}))
+        ];
+        const rank = (l)=> l==="高"?2 : l==="中"?1 : 0;
+        combined.sort((a,b)=>rank(b.level)-rank(a.level));
+        combined.slice(0,3).forEach(c=>addLine(c.level, c.msg));
+      }
+
+    }catch(e){
+      console.warn("risk check failed", e);
+    }
+  }
+
+  // ---------- 技术指标 ----------
+  function taKey(p){ return `${p.type}:${String(p.code||"").toUpperCase()}`; }
+
+  function renderTAFromCache(){
+    const cache = JSON.parse(localStorage.getItem(LS.taCache) || "{}");
+    const box = $("taList");
+    box.innerHTML = "";
+    if (!window.positions.length){
+      box.innerHTML = `<div class="mut small">暂无持仓。</div>`;
+      return;
+    }
+    if (!cache || Object.keys(cache).length===0){
+      box.innerHTML = `<div class="mut small">暂无技术指标缓存。点“刷新技术指标”。</div>`;
+      return;
+    }
+
+    for (const p of window.positions){
+      const k = taKey(p);
+      const d = cache[k];
+      const div = document.createElement("div");
+      div.className = "li";
+
+      if (!d || !d.ok){
+        div.innerHTML = `<div><b>${p.code}</b> <span class="pill">${p.type}</span></div>
+          <div class="mut small" style="margin-top:6px;">暂无数据（可能是上游不稳定或数据点不足）。</div>`;
+        box.appendChild(div);
+        continue;
+      }
+
+      const macd = d.macd ? `MACD:${num(d.macd.macd)} 信号:${num(d.macd.signal)} 柱:${num(d.macd.hist)}` : "MACD:-";
+      const boll = d.boll ? `布林: 上${num(d.boll.upper)} 中${num(d.boll.mid)} 下${num(d.boll.lower)}` : "布林:-";
+      const pos = (typeof d.bollPos==="number") ? `布林位置:${Math.round(d.bollPos*100)}%` : "";
+
+      div.innerHTML = `
+        <div class="row" style="justify-content:space-between">
+          <div><b>${p.code}</b> <span class="pill">${p.type}</span> <span class="tag">${d.trend||"未知"}</span> <span class="mut small">${d.lastDate||""}</span></div>
+          <div class="mut small">源：${d.source||"-"} 点数:${d.points||"-"}</div>
+        </div>
+        <div class="sep"></div>
+        <div class="grid2 small">
+          <div>
+            <div>RSI(14)：<b>${num(d.rsi14)}</b></div>
+            <div>MA20：${num(d.ma20)} ｜ MA60：${num(d.ma60)}</div>
+            <div>20日收益：${num(d.ret20)}% ｜ 60日收益：${num(d.ret60)}%</div>
+          </div>
+          <div>
+            <div>${macd}</div>
+            <div>${boll}</div>
+            <div>${pos}</div>
+          </div>
+        </div>
+      `;
+      box.appendChild(div);
+    }
+  }
+
+  function num(x){
+    if (typeof x !== "number" || !isFinite(x)) return "-";
+    return (Math.abs(x) >= 1000) ? x.toFixed(0) : x.toFixed(2);
+  }
+
+  function clearTA(){
+    localStorage.removeItem(LS.taCache);
+    renderTAFromCache();
+  }
+
+  async function runPool(tasks, limit=4){
+    const results = [];
+    let idx = 0;
+    async function worker(){
+      while (idx < tasks.length){
+        const i = idx++;
+        try{ results[i] = await tasks[i](); }
+        catch(e){ results[i] = { ok:false, error:String(e) }; }
+      }
+    }
+    const workers = Array.from({length: Math.min(limit, tasks.length)}, ()=>worker());
+    await Promise.all(workers);
+    return results;
+  }
+
+  async function refreshTA(){
+    const api = apiBase();
+    if(!api) return alert("先填后端地址");
+    if(!window.positions.length) return alert("先添加持仓");
+
+    $("taList").innerHTML = `<div class="mut small">刷新技术指标中…</div>`;
+
+    const tasks = window.positions.map(p => async ()=>{
+      const url = `${api}/api/ta/one?type=${encodeURIComponent(p.type)}&code=${encodeURIComponent(p.code)}`;
+      const r = await fetch(url);
+      const j = await r.json();
+      // 同时把 theme 写回持仓（用于风控/AI）
+      if (j && j.ok){
+        p.theme = (p.theme || null);
+      }
+      return { key: taKey(p), data: j };
+    });
+
+    const results = await runPool(tasks, 4);
+    const cache = JSON.parse(localStorage.getItem(LS.taCache) || "{}");
+    for (const it of results){
+      if (!it || !it.key) continue;
+      cache[it.key] = it.data;
+    }
+    localStorage.setItem(LS.taCache, JSON.stringify(cache));
+
+    persist();
+    renderTAFromCache();
+  }
+
+  // ---------- 板块雷达 ----------
+  async function refreshRadar(){
+    const api = apiBase();
+    if(!api) return;
+
+    $("radarList").innerHTML = `<div class="mut small">刷新中…</div>`;
+    try{
+      const r = await fetch(`${api}/api/radar/sectors?top=3`);
+      const j = await r.json();
+      const box = $("radarList");
+      box.innerHTML = "";
+      if(!j.ok || !j.top || !j.top.length){
+        box.innerHTML = `<div class="mut small">暂无雷达结果（可能上游不稳定）。</div>`;
+        return;
+      }
+      j.top.forEach((x, i)=>{
+        const div = document.createElement("div");
+        div.className = "li";
+        div.innerHTML = `
+          <div class="row" style="justify-content:space-between">
+            <div><b>Top${i+1}：${x.sector}</b> <span class="tag mono">${x.symbol}</span> <span class="tag">趋势：${x.trend}</span></div>
+            <div class="mut small">分数：<b>${x.score}</b></div>
+          </div>
+          <div class="sep"></div>
+          <div class="small">
+            <div>近20日：${num(x.ret20)}% ｜ 近60日：${num(x.ret60)}% ｜ RSI：${num(x.rsi14)}</div>
+            <div class="mut" style="margin-top:6px;">原因：${(x.reasons||[]).join("；")}</div>
+          </div>
+        `;
+        box.appendChild(div);
+      });
+    }catch(e){
+      $("radarList").innerHTML = `<div class="mut small">雷达请求失败：${e.message}</div>`;
+    }
+  }
+
+  // ---------- 初始化 ----------
   load();
 </script>
 </body>
