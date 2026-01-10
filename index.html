@@ -17,7 +17,7 @@
     button{background:var(--btn);border:none;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;font-size:15px}
     button.secondary{background:#13224a;border:1px solid var(--line);color:var(--txt)}
     table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
-    th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:center}
+    th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:center;vertical-align:top}
     .mut{color:var(--mut)}
     .ok{color:var(--ok)} .bad{color:var(--bad)}
     .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);font-size:12px}
@@ -126,7 +126,13 @@
     const cost = $("cost").value ? Number($("cost").value) : null;
     if(!code || !amount) return alert("请填代码 + 金额");
 
-    window.positions.push({ type, code, amount, cost, name:"", price:null, mv:null, pnl:null, pnlPct:null });
+    window.positions.push({
+      type, code, amount, cost,
+      name:"",
+      price:null, mv:null, pnl:null, pnlPct:null,
+      // 国内基金附加字段（用于展示）
+      _nav:null, _navDate:null, _estNav:null, _estPct:null, _time:null
+    });
     persist(); render();
   }
 
@@ -140,6 +146,7 @@
 
   function render(){
     const tb = $("tb"); tb.innerHTML = "";
+
     const totalAmount = window.positions.reduce((s,p)=>s + (p.amount||0), 0);
     const totalMV = window.positions.reduce((s,p)=>s + (p.mv||0), 0);
     const totalPNL = window.positions.reduce((s,p)=>s + (p.pnl||0), 0);
@@ -149,11 +156,22 @@
       const pnlCls = (p.pnlPct ?? 0) >= 0 ? "ok" : "bad";
       const w = totalMV ? (p.mv||0)/totalMV*100 : 0;
 
+      const priceCell = (p.type === "CN_FUND")
+        ? `
+          ${p.price ?? "-"}
+          <div class="mut" style="font-size:12px; margin-top:2px; line-height:1.25;">
+            净值: ${(typeof p._nav === "number" ? p._nav : "-")}（${p._navDate || "-"}）
+            <br/>
+            估值: ${(typeof p._estNav === "number" ? p._estNav : "-")}（${(typeof p._estPct === "number" ? p._estPct : "-")}%）${p._time ? " " + p._time : ""}
+          </div>
+        `
+        : `${p.price ?? "-"}`;
+
       tr.innerHTML = `
         <td><span class="pill">${p.type}</span></td>
         <td>${p.code}</td>
         <td class="mut">${p.name || "-"}</td>
-        <td>${p.price ?? "-"}</td>
+        <td>${priceCell}</td>
         <td>${p.mv!=null ? p.mv.toFixed(2) : "-"}</td>
         <td class="${pnlCls}">${p.pnl!=null ? p.pnl.toFixed(2) : "-"}</td>
         <td class="${pnlCls}">${p.pnlPct!=null ? p.pnlPct.toFixed(2)+"%" : "-"}</td>
@@ -162,7 +180,8 @@
       tb.appendChild(tr);
     });
 
-    $("sum").textContent = `投入合计：${totalAmount.toFixed(2)} ｜ 市值合计：${totalMV.toFixed(2)} ｜ 总盈亏：${totalPNL.toFixed(2)}`;
+    $("sum").textContent =
+      `投入合计：${totalAmount.toFixed(2)} ｜ 市值合计：${totalMV.toFixed(2)} ｜ 总盈亏：${totalPNL.toFixed(2)}`;
   }
 
   async function refreshAll(){
@@ -170,13 +189,23 @@
     if(!base) return alert("先填后端地址");
     const api = base.replace(/\/+$/,"");
 
-    // 国内基金：逐个拉（价格优先 estNav，其次 nav）
+    // 国内基金：逐个拉（对账模式：默认用单位净值 nav）
     for (const p of window.positions){
       if (p.type === "CN_FUND"){
         const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
         const j = await r.json();
+
         p.name = j.name || p.name;
-        p.price = (typeof j.estNav === "number" && j.estNav>0) ? j.estNav : j.nav;
+
+        // ✅ 关键：主现价用单位净值 nav（与你理财软件一致），若 nav 无则退回 estNav
+        p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : j.estNav;
+
+        // 保存附加展示字段
+        p._nav = (typeof j.nav === "number") ? j.nav : null;
+        p._navDate = j.navDate || null;
+        p._estNav = (typeof j.estNav === "number") ? j.estNav : null;
+        p._estPct = (typeof j.estPct === "number") ? j.estPct : null;
+        p._time = j.time || null;
       }
     }
 
@@ -198,7 +227,7 @@
 
     // 计算：市值/盈亏（用金额估算份额）
     for (const p of window.positions){
-      if (typeof p.price === "number" && p.price>0){
+      if (typeof p.price === "number" && p.price > 0){
         const baseCost = (typeof p.cost === "number" && p.cost > 0) ? p.cost : p.price;
         const shares = p.amount / baseCost;
         p.mv = shares * p.price;
@@ -213,7 +242,11 @@
   }
 
   function saveAI(){
-    const cfg = { baseUrl:$("aiBase").value.trim(), apiKey:$("aiKey").value.trim(), model:$("aiModel").value.trim() };
+    const cfg = {
+      baseUrl:$("aiBase").value.trim(),
+      apiKey:$("aiKey").value.trim(),
+      model:$("aiModel").value.trim()
+    };
     localStorage.setItem(LS.ai, JSON.stringify(cfg));
     $("aiOut").value = "✅ AI 配置已保存（仅本机）。";
   }
@@ -228,12 +261,13 @@
 
     const payload = window.positions.map(p=>({
       type:p.type, code:p.code, name:p.name, amount:p.amount, cost:p.cost,
-      price:p.price, mv:p.mv, pnl:p.pnl, pnlPct:p.pnlPct
+      price:p.price, mv:p.mv, pnl:p.pnl, pnlPct:p.pnlPct,
+      nav:p._nav, navDate:p._navDate, estNav:p._estNav, estPct:p._estPct, time:p._time
     }));
 
     const messages = [
       { role:"system", content:"你是严格的组合风控与操作建议助手。不要编造数据。必须输出：每只标的 今日动作（买/卖/不动）+一句理由；组合风险等级（低/中/高）+总仓位建议；未来3-6个月最看好板块Top1 + 推荐基金/ETF代码 + 原因。"},
-      { role:"user", content:`我的持仓与实时价格/盈亏（JSON）：\n${JSON.stringify(payload, null, 2)}\n\n按要求输出，格式清晰。` }
+      { role:"user", content:`我的持仓与价格/盈亏（JSON）：\n${JSON.stringify(payload, null, 2)}\n\n按要求输出，格式清晰。` }
     ];
 
     $("aiOut").value = "生成中…";
