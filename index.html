@@ -25,7 +25,6 @@
     .small{font-size:12px;line-height:1.25}
     .split{display:flex;gap:10px;flex-wrap:wrap}
     .col{flex:1;min-width:300px}
-
     .newsItem{padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#0a1430}
     .newsItem a{color:#bcd1ff;text-decoration:none}
     .newsItem a:hover{text-decoration:underline}
@@ -89,7 +88,6 @@
 
   <div class="card">
     <h3>③ 新闻与政策（自动随持仓变化）</h3>
-
     <div class="split">
       <div class="col">
         <div class="row">
@@ -97,8 +95,8 @@
           <button onclick="fetchNews()">🗞 抓取新闻</button>
         </div>
         <div class="mut small" style="margin-top:8px;">
-          关键词来自三层：A 宏观固定 + B 行业主题（自动） + C 标的强相关（自动）。你换仓后再次点“自动生成关键词”即可更新。
-          <br/>提示：已启用<strong>按仓位加权</strong>抓取配额，并启用<strong>相关度过滤</strong>（minScore=2）。
+          关键词来自三层：A 宏观固定 + B 行业主题（自动） + C 标的强相关（自动）。
+          <br/>已启用：按权重分配配额 + 相关度评分过滤（minScore=2）。
         </div>
 
         <div style="margin-top:10px;">
@@ -108,7 +106,7 @@
 
         <div style="margin-top:10px;">
           <div class="mut">关键词池（可手动增删，用逗号分隔）：</div>
-          <input id="newsKeywords" placeholder="例如：美联储,降息,AI,半导体,医药,医保,港股科技..." />
+          <input id="newsKeywords" placeholder="例如：美联储,降息,AI算力,半导体,恒生科技,科创50..." />
           <div class="row" style="margin-top:8px;">
             <button class="secondary" onclick="saveNewsKeywords()">保存关键词</button>
             <button class="secondary" onclick="resetNewsKeywords()">重置为自动关键词</button>
@@ -173,8 +171,28 @@
     newsCache:"ic_news_cache"
   };
   const $ = (id)=>document.getElementById(id);
-
   let editingIndex = -1;
+
+  function decodeEntities(s){
+    if(!s) return "";
+    return String(s)
+      .replace(/&lt;/g,"<").replace(/&gt;/g,">")
+      .replace(/&amp;/g,"&").replace(/&quot;/g,'"')
+      .replace(/&#39;/g,"'").replace(/&nbsp;/g," ");
+  }
+  function stripTags(s){
+    if(!s) return "";
+    return String(s)
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi,"")
+      .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi,"")
+      .replace(/<[^>]+>/g," ")
+      .replace(/\s+/g," ")
+      .trim();
+  }
+  function cleanDesc(s){
+    // 后端已尽量干净，但再兜底：把残余 HTML/实体清掉
+    return stripTags(decodeEntities(s)).slice(0, 180);
+  }
 
   function load() {
     const defaultBackend = "https://invest-copilot-backend.onrender.com";
@@ -338,16 +356,12 @@
     if(!base) return alert("先填后端地址");
     const api = base.replace(/\/+$/,"");
 
-    // 国内基金
     for (const p of window.positions){
       if (p.type === "CN_FUND"){
         const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
         const j = await r.json();
-        if (j.error) {
-          // 失败不覆盖旧数据，只提示
-          console.warn("CN_FUND fetch error", p.code, j);
-          continue;
-        }
+        if (j.error) { console.warn("CN_FUND fetch error", p.code, j); continue; }
+
         p.name = j.name || p.name;
         p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : j.estNav;
         p._nav = (typeof j.nav === "number") ? j.nav : null;
@@ -358,7 +372,6 @@
       }
     }
 
-    // 海外：批量拉
     const gl = window.positions.filter(p=>p.type==="US_TICKER");
     if (gl.length){
       const symbols = gl.map(p=>p.code).join(",");
@@ -366,7 +379,7 @@
       const j = await r.json();
       const map = new Map((j.quotes||[]).map(q=>[q.symbol, q]));
       for (const p of gl){
-        const q = map.get(p.code);
+        const q = map.get(p.code.toUpperCase()) || map.get(p.code);
         if(q){
           p.name = q.name || p.name;
           p.price = q.price;
@@ -374,7 +387,6 @@
       }
     }
 
-    // 计算市值/盈亏（金额估算份额）
     for (const p of window.positions){
       if (typeof p.price === "number" && p.price > 0){
         const baseCost = (typeof p.cost === "number" && p.cost > 0) ? p.cost : p.price;
@@ -432,7 +444,7 @@
     $("newsKeywords").value = kw;
     localStorage.setItem(LS.newsKeywords, kw);
 
-    alert("✅ 已生成自动关键词（已按仓位加权，可手动修改后再抓新闻）");
+    alert("✅ 已生成自动关键词（更偏向具体投资词）");
   }
 
   function saveNewsKeywords(){
@@ -476,7 +488,7 @@
       div.innerHTML = `
         <div class="small">${tagHtml(it)} <span class="mut">${it.pubDate || ""}</span></div>
         <div style="margin-top:6px;"><a href="${it.link}" target="_blank" rel="noreferrer">${it.title}</a></div>
-        <div class="mut small" style="margin-top:6px;">${(it.description || "").slice(0, 180)}</div>
+        <div class="mut small" style="margin-top:6px;">${cleanDesc(it.description || "")}</div>
         <div class="mut small" style="margin-top:6px;">关键词：${it.keyword || "-"}</div>
       `;
       box.appendChild(div);
@@ -491,9 +503,8 @@
     const kw = (localStorage.getItem(LS.newsKeywords) || $("newsKeywords").value || "").trim();
     if (!kw) return alert("先生成或填写关键词");
 
-    $("newsList").innerHTML = `<div class="mut small">抓取中…（第一次可能慢一点）</div>`;
+    $("newsList").innerHTML = `<div class="mut small">抓取中…</div>`;
 
-    // ✅ A：把 weights 传给后端；✅ 降噪：minScore=2
     const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
     const weights = plan?.weights ? encodeURIComponent(JSON.stringify(plan.weights)) : "";
     const url = `${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=12&minScore=2${weights ? `&weights=${weights}` : ""}`;
@@ -530,17 +541,17 @@
     const newsCache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
     const newsItems = (newsCache && newsCache.items) ? newsCache.items : [];
 
-    // ✅ C：先让后端生成“新闻影响摘要”
+    // ✅ 调后端 brief：让 AI 更贴合
     let newsBrief = "";
-    try {
+    try{
       const br = await fetch(`${api}/api/news/brief`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ positions: holdings, items: newsItems })
       });
       const bj = await br.json();
       if (bj.ok) newsBrief = bj.briefText || "";
-    } catch (e) {
+    }catch(e){
       console.warn("news brief failed", e);
     }
 
