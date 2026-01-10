@@ -25,9 +25,15 @@
     .small{font-size:12px;line-height:1.25}
     .split{display:flex;gap:10px;flex-wrap:wrap}
     .col{flex:1;min-width:300px}
+
     .newsItem{padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#0a1430}
     .newsItem a{color:#bcd1ff;text-decoration:none}
     .newsItem a:hover{text-decoration:underline}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);margin-right:6px}
+    .tagBull{color:var(--ok);border-color:rgba(48,209,88,.35)}
+    .tagBear{color:var(--bad);border-color:rgba(255,69,58,.35)}
+    .tagNeu{color:var(--mut)}
+    .tagTheme{color:#c7d7ff;border-color:rgba(199,215,255,.25)}
 
     /* Modal */
     .modalMask{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
@@ -92,6 +98,7 @@
         </div>
         <div class="mut small" style="margin-top:8px;">
           关键词来自三层：A 宏观固定 + B 行业主题（自动） + C 标的强相关（自动）。你换仓后再次点“自动生成关键词”即可更新。
+          <br/>提示：已启用<strong>按仓位加权</strong>抓取配额，并启用<strong>相关度过滤</strong>（minScore=2）。
         </div>
 
         <div style="margin-top:10px;">
@@ -186,7 +193,8 @@
     if (kw) $("newsKeywords").value = kw;
 
     const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
-    if (plan) renderThemes(plan.themes || []);
+    if (plan) renderThemes(plan.themes || [], plan.themeWeights || null);
+
     const cache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
     if (cache) renderNews(cache.items || []);
 
@@ -204,7 +212,7 @@
     const base = $("backend").value.trim();
     if(!base) return alert("先填写后端地址");
     try{
-      const r = await fetch(base.replace(/\/+$/,"") + "/health", { cache:"no-store" });
+      const r = await fetch(base.replace(/\/+$/,"") + "/health");
       const j = await r.json();
       $("pingResult").textContent = j.ok ? "✅ 后端服务正常" : "⚠️ 后端异常";
     }catch(e){
@@ -223,8 +231,7 @@
       type, code, amount, cost,
       name:"",
       price:null, mv:null, pnl:null, pnlPct:null,
-      _nav:null, _navDate:null, _navSource:null, _note:null,
-      _estNav:null, _estPct:null, _time:null
+      _nav:null, _navDate:null, _estNav:null, _estPct:null, _time:null
     });
     persist(); render();
   }
@@ -270,8 +277,7 @@
 
     p.name = "";
     p.price = p.mv = p.pnl = p.pnlPct = null;
-    p._nav = p._navDate = p._navSource = p._note = null;
-    p._estNav = p._estPct = p._time = null;
+    p._nav = p._navDate = p._estNav = p._estPct = p._time = null;
 
     persist(); render();
     closeModal();
@@ -299,8 +305,7 @@
         ? `
           ${p.price ?? "-"}
           <div class="mut small" style="margin-top:2px;">
-            净值: ${(typeof p._nav === "number" ? p._nav : "-")}（${p._navDate || "-"}）${p._navSource ? " · " + p._navSource : ""}
-            ${p._note ? `<div class="mut small" style="margin-top:2px;">${p._note}</div>` : ""}
+            净值: ${(typeof p._nav === "number" ? p._nav : "-")}（${p._navDate || "-"}）
             <br/>
             估值: ${(typeof p._estNav === "number" ? p._estNav : "-")}（${(typeof p._estPct === "number" ? p._estPct : "-")}%）${p._time ? " " + p._time : ""}
           </div>
@@ -333,79 +338,74 @@
     if(!base) return alert("先填后端地址");
     const api = base.replace(/\/+$/,"");
 
-    const btns = Array.from(document.querySelectorAll("button"));
-    btns.forEach(b=>b.disabled=true);
-
-    try{
-      // 国内基金：并发拉取 + 强制不缓存 + URL 加 rt 防中间缓存
-      await Promise.all(window.positions.map(async (p)=>{
-        if (p.type !== "CN_FUND") return;
-        const url = `${api}/api/cn/fund/${encodeURIComponent(p.code)}?rt=${Date.now()}`;
-        const r = await fetch(url, {
-          cache:"no-store",
-          headers:{
-            "Cache-Control":"no-cache",
-            "Pragma":"no-cache"
-          }
-        });
+    // 国内基金
+    for (const p of window.positions){
+      if (p.type === "CN_FUND"){
+        const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
         const j = await r.json();
-
+        if (j.error) {
+          // 失败不覆盖旧数据，只提示
+          console.warn("CN_FUND fetch error", p.code, j);
+          continue;
+        }
         p.name = j.name || p.name;
-
-        // 现价：官方净值优先（对账口径），没有才回退估值
-        p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav
-               : (typeof j.estNav === "number" && j.estNav > 0) ? j.estNav
-               : null;
-
+        p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : j.estNav;
         p._nav = (typeof j.nav === "number") ? j.nav : null;
         p._navDate = j.navDate || null;
-        p._navSource = j.navSource || null;
-        p._note = j.note || null;
-
         p._estNav = (typeof j.estNav === "number") ? j.estNav : null;
         p._estPct = (typeof j.estPct === "number") ? j.estPct : null;
         p._time = j.time || null;
-      }));
-
-      // 海外：批量拉（也加 rt + no-store）
-      const gl = window.positions.filter(p=>p.type==="US_TICKER");
-      if (gl.length){
-        const symbols = gl.map(p=>p.code).join(",");
-        const url = `${api}/api/gl/quote?symbols=${encodeURIComponent(symbols)}&rt=${Date.now()}`;
-        const r = await fetch(url, { cache:"no-store" });
-        const j = await r.json();
-        const map = new Map((j.quotes||[]).map(q=>[String(q.symbol||"").toUpperCase(), q]));
-        for (const p of gl){
-          const q = map.get(String(p.code||"").toUpperCase());
-          if(q){
-            p.name = q.name || p.name;
-            p.price = q.price;
-          }
-        }
       }
-
-      // 计算市值/盈亏（金额估算份额）
-      for (const p of window.positions){
-        if (typeof p.price === "number" && p.price > 0){
-          const baseCost = (typeof p.cost === "number" && p.cost > 0) ? p.cost : p.price;
-          const shares = p.amount / baseCost;
-          p.mv = shares * p.price;
-          p.pnl = p.mv - p.amount;
-          p.pnlPct = (p.pnl / p.amount) * 100;
-        } else {
-          p.mv = p.pnl = p.pnlPct = null;
-        }
-      }
-
-      persist(); render();
-    } finally {
-      btns.forEach(b=>b.disabled=false);
     }
+
+    // 海外：批量拉
+    const gl = window.positions.filter(p=>p.type==="US_TICKER");
+    if (gl.length){
+      const symbols = gl.map(p=>p.code).join(",");
+      const r = await fetch(`${api}/api/gl/quote?symbols=${encodeURIComponent(symbols)}`);
+      const j = await r.json();
+      const map = new Map((j.quotes||[]).map(q=>[q.symbol, q]));
+      for (const p of gl){
+        const q = map.get(p.code);
+        if(q){
+          p.name = q.name || p.name;
+          p.price = q.price;
+        }
+      }
+    }
+
+    // 计算市值/盈亏（金额估算份额）
+    for (const p of window.positions){
+      if (typeof p.price === "number" && p.price > 0){
+        const baseCost = (typeof p.cost === "number" && p.cost > 0) ? p.cost : p.price;
+        const shares = p.amount / baseCost;
+        p.mv = shares * p.price;
+        p.pnl = p.mv - p.amount;
+        p.pnlPct = (p.pnl / p.amount) * 100;
+      } else {
+        p.mv = p.pnl = p.pnlPct = null;
+      }
+    }
+
+    persist(); render();
   }
 
   // ---------- NEWS ----------
-  function renderThemes(themes){
-    $("themes").textContent = themes && themes.length ? themes.join(" / ") : "（尚未生成）";
+  function renderThemes(themes, themeWeights){
+    if (!themes || !themes.length) {
+      $("themes").textContent = "（尚未生成）";
+      return;
+    }
+    if (!themeWeights) {
+      $("themes").textContent = themes.join(" / ");
+      return;
+    }
+    const parts = themes.map(t=>{
+      const w = themeWeights[t];
+      if (typeof w === "number") return `${t} ${(w*100).toFixed(1)}%`;
+      return t;
+    });
+    $("themes").textContent = parts.join(" / ");
   }
 
   async function buildNewsPlan(){
@@ -414,29 +414,25 @@
     const api = base.replace(/\/+$/,"");
 
     const payload = window.positions.map(p=>({
-      type:p.type, code:p.code, name:p.name, amount:p.amount
+      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
     }));
 
-    const r = await fetch(`${api}/api/news/plan?rt=${Date.now()}`, {
+    const r = await fetch(`${api}/api/news/plan`, {
       method:"POST",
-      cache:"no-store",
-      headers:{
-        "Content-Type":"application/json",
-        "Cache-Control":"no-cache",
-        "Pragma":"no-cache"
-      },
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ positions: payload })
     });
     const j = await r.json();
     if (!j.ok) return alert("生成关键词失败：" + (j.error || ""));
 
     localStorage.setItem(LS.newsPlan, JSON.stringify(j));
-    renderThemes(j.themes || []);
+    renderThemes(j.themes || [], j.themeWeights || null);
 
     const kw = (j.keywords || []).join(",");
     $("newsKeywords").value = kw;
     localStorage.setItem(LS.newsKeywords, kw);
-    alert("✅ 已生成自动关键词（可手动修改后再抓新闻）");
+
+    alert("✅ 已生成自动关键词（已按仓位加权，可手动修改后再抓新闻）");
   }
 
   function saveNewsKeywords(){
@@ -453,6 +449,20 @@
     localStorage.setItem(LS.newsKeywords, kw);
   }
 
+  function tagHtml(it){
+    const s = (it.sentiment || "neutral").toLowerCase();
+    const themes = Array.isArray(it.themes) ? it.themes : [];
+    const score = (typeof it.score === "number") ? it.score : null;
+
+    let sentimentTag = `<span class="tag tagNeu">中性</span>`;
+    if (s === "bullish") sentimentTag = `<span class="tag tagBull">利好</span>`;
+    if (s === "bearish") sentimentTag = `<span class="tag tagBear">利空</span>`;
+
+    const themeTags = themes.slice(0,3).map(t=>`<span class="tag tagTheme">${t}</span>`).join("");
+    const scoreTag = (score!=null) ? `<span class="tag tagNeu">score:${score}</span>` : "";
+    return `${sentimentTag}${themeTags}${scoreTag}`;
+  }
+
   function renderNews(items){
     const box = $("newsList");
     box.innerHTML = "";
@@ -464,9 +474,10 @@
       const div = document.createElement("div");
       div.className = "newsItem";
       div.innerHTML = `
-        <div class="small"><span class="pill">${it.keyword || "-"}</span> <span class="mut">${it.pubDate || ""}</span></div>
+        <div class="small">${tagHtml(it)} <span class="mut">${it.pubDate || ""}</span></div>
         <div style="margin-top:6px;"><a href="${it.link}" target="_blank" rel="noreferrer">${it.title}</a></div>
         <div class="mut small" style="margin-top:6px;">${(it.description || "").slice(0, 180)}</div>
+        <div class="mut small" style="margin-top:6px;">关键词：${it.keyword || "-"}</div>
       `;
       box.appendChild(div);
     }
@@ -482,7 +493,12 @@
 
     $("newsList").innerHTML = `<div class="mut small">抓取中…（第一次可能慢一点）</div>`;
 
-    const r = await fetch(`${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=12&rt=${Date.now()}`, { cache:"no-store" });
+    // ✅ A：把 weights 传给后端；✅ 降噪：minScore=2
+    const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
+    const weights = plan?.weights ? encodeURIComponent(JSON.stringify(plan.weights)) : "";
+    const url = `${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=12&minScore=2${weights ? `&weights=${weights}` : ""}`;
+
+    const r = await fetch(url);
     const j = await r.json();
     if (!j.ok) return alert("抓取新闻失败：" + (j.error || ""));
 
@@ -508,12 +524,25 @@
     const holdings = window.positions.map(p=>({
       type:p.type, code:p.code, name:p.name, amount:p.amount, cost:p.cost,
       price:p.price, mv:p.mv, pnl:p.pnl, pnlPct:p.pnlPct,
-      nav:p._nav, navDate:p._navDate, navSource:p._navSource,
-      estNav:p._estNav, estPct:p._estPct, time:p._time
+      nav:p._nav, navDate:p._navDate, estNav:p._estNav, estPct:p._estPct, time:p._time
     }));
 
     const newsCache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
     const newsItems = (newsCache && newsCache.items) ? newsCache.items : [];
+
+    // ✅ C：先让后端生成“新闻影响摘要”
+    let newsBrief = "";
+    try {
+      const br = await fetch(`${api}/api/news/brief`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ positions: holdings, items: newsItems })
+      });
+      const bj = await br.json();
+      if (bj.ok) newsBrief = bj.briefText || "";
+    } catch (e) {
+      console.warn("news brief failed", e);
+    }
 
     const messages = [
       { role:"system", content:
@@ -525,16 +554,18 @@
 4) 未来3-6个月：最看好板块Top1 + 推荐基金/ETF代码 + 原因（结合宏观与新闻）`
       },
       { role:"user", content:
-`我的持仓与价格/盈亏（JSON）：\n${JSON.stringify(holdings, null, 2)}\n\n新闻与政策（最多12条）：\n${JSON.stringify(newsItems, null, 2)}\n\n请按要求输出，格式清晰。`
+`我的持仓与价格/盈亏（JSON）：\n${JSON.stringify(holdings, null, 2)}\n
+新闻与政策（最多12条，带情绪/主题标签）：\n${JSON.stringify(newsItems, null, 2)}\n
+自动摘要（请优先参考，避免跑题）：\n${newsBrief}\n
+请按要求输出，格式清晰。`
       }
     ];
 
     $("aiOut").value = "生成中…";
 
-    const r = await fetch(`${api}/api/ai/chat?rt=${Date.now()}`, {
+    const r = await fetch(`${api}/api/ai/chat`, {
       method:"POST",
-      cache:"no-store",
-      headers:{ "Content-Type":"application/json", "Cache-Control":"no-cache", "Pragma":"no-cache" },
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, model: cfg.model, messages })
     });
 
