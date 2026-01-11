@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>投资副驾驶 v2（落地版）</title>
+  <title>投资副驾驶 v1（专业版）</title>
   <style>
     :root{--bg:#0b1220;--card:#0f1a33;--line:#1f2a44;--txt:#e6edf7;--mut:#9fb0d0;--ok:#30d158;--bad:#ff453a;--btn:#2f6bff;}
     body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial}
-    header{padding:14px 16px;background:#061027;border-bottom:1px solid var(--line);font-weight:800}
-    .wrap{padding:14px;max-width:1180px;margin:0 auto}
+    header{padding:14px 16px;background:#061027;border-bottom:1px solid var(--line);font-weight:700}
+    .wrap{padding:14px;max-width:1100px;margin:0 auto}
     .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
     h3{margin:0 0 10px;font-size:16px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     input,select,textarea{background:#07122b;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:15px;flex:1;min-width:140px}
-    textarea{min-height:120px}
-    button{background:var(--btn);border:none;color:#fff;border-radius:10px;padding:10px 12px;font-weight:800;font-size:14px;cursor:pointer}
+    textarea{min-height:110px}
+    button{background:var(--btn);border:none;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;cursor:pointer}
     button.secondary{background:#13224a;border:1px solid var(--line);color:var(--txt)}
     button.danger{background:#3a1020;border:1px solid #6a2233}
     table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
@@ -23,16 +23,24 @@
     .ok{color:var(--ok)} .bad{color:var(--bad)}
     .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);font-size:12px}
     .small{font-size:12px;line-height:1.25}
-    .split{display:flex;gap:12px;flex-wrap:wrap}
-    .col{flex:1;min-width:320px}
-    .newsItem{padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#0a1430}
-    .newsItem a{color:#bcd1ff;text-decoration:none}
-    .newsItem a:hover{text-decoration:underline}
-    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);margin-right:6px;color:var(--mut)}
+    .split{display:flex;gap:10px;flex-wrap:wrap}
+    .col{flex:1;min-width:300px}
+    .box{border:1px solid var(--line);border-radius:12px;background:#0a1430;padding:10px}
+    .list{margin-top:10px}
+    .li{padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#0a1430}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);margin-right:6px}
+    .tagUp{color:var(--ok);border-color:rgba(48,209,88,.35)}
+    .tagDown{color:var(--bad);border-color:rgba(255,69,58,.35)}
+    .tagNeu{color:var(--mut)}
     .tagBull{color:var(--ok);border-color:rgba(48,209,88,.35)}
     .tagBear{color:var(--bad);border-color:rgba(255,69,58,.35)}
-    .tagTheme{color:#c7d7ff;border-color:rgba(199,215,255,.25)}
+    .tagTheme{color:#c7dfff;border-color:rgba(199,215,255,.25)}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    details summary{cursor:pointer;color:#c7dfff}
+    .scroll{max-height:420px;overflow:auto;padding-right:6px}
+    .sep{height:1px;background:var(--line);margin:10px 0}
+    a{color:#bcd1ff;text-decoration:none}
+    a:hover{text-decoration:underline}
 
     /* Modal */
     .modalMask{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
@@ -40,14 +48,10 @@
     .modal h4{margin:0 0 10px}
     .modal .row{margin-top:10px}
     .modal .footer{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
-
-    /* collapsible */
-    details{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0a1430}
-    summary{cursor:pointer;font-weight:800}
   </style>
 </head>
 <body>
-<header>📈 投资副驾驶 v2（落地版）</header>
+<header>📈 投资副驾驶 v1（专业版）</header>
 <div class="wrap">
 
   <div class="card">
@@ -67,7 +71,7 @@
         <option value="CN_FUND">国内基金（6位）</option>
         <option value="US_TICKER">海外标的（Ticker）</option>
       </select>
-      <input id="code" placeholder="基金代码/Ticker：025167 / QQQ" />
+      <input id="code" placeholder="基金代码/Ticker：025167 / SPY" />
       <input id="amount" type="number" placeholder="持有金额（元或美元）" />
       <input id="cost" type="number" placeholder="成本净值/成本价（可选）" />
       <button onclick="add()">添加</button>
@@ -99,7 +103,7 @@
           <button onclick="fetchNews()">🗞 抓取新闻</button>
         </div>
         <div class="mut small" style="margin-top:8px;">
-          说明：关键词来自「宏观固定 + 主题识别 + 标的短词」；抓取来自 Google News RSS（不需要你填任何API）。
+          已启用：按权重分配配额 + 相关度评分过滤（minScore=2）。
         </div>
 
         <div style="margin-top:10px;">
@@ -118,9 +122,10 @@
       </div>
 
       <div class="col">
-        <details open>
-          <summary>新闻列表（最近）— 点击可折叠</summary>
-          <div id="newsList" style="max-height:420px; overflow:auto; padding-top:6px;"></div>
+        <div class="mut">新闻列表（最近）：</div>
+        <details open style="margin-top:8px;">
+          <summary>点击折叠/展开（列表可滚动）</summary>
+          <div id="newsList" class="scroll" style="margin-top:8px;"></div>
         </details>
       </div>
     </div>
@@ -129,13 +134,13 @@
   <div class="card">
     <h3>④ AI 决策（OpenAI-compatible 方式）</h3>
     <div class="row">
-      <input id="aiBase" placeholder="AI BaseUrl（例如：https://api.x.ai/v1 或 https://api.openai.com/v1）" />
+      <input id="aiBase" placeholder="AI BaseUrl，例如：https://api.openai.com/v1 或你的网关" />
       <input id="aiKey" placeholder="API Key（仅保存在本机）" />
-      <input id="aiModel" placeholder="模型名（例如：grok-4 / grok-3 / gpt-5-mini）" />
+      <input id="aiModel" placeholder="模型名，例如：gpt-5-mini / grok-3 / gemini-xxx" />
     </div>
     <div class="row" style="margin-top:10px;">
       <button class="secondary" onclick="saveAI()">保存AI配置</button>
-      <button onclick="runAI()">🤖 今日动作 + 3-6个月板块推荐（含新闻影响）</button>
+      <button onclick="runAI()">🤖 今日动作 + 3-6个月板块建议（含技术/风控/新闻）</button>
     </div>
     <textarea id="aiOut" placeholder="AI 输出会在这里..."></textarea>
     <div class="mut small">提示：AI Key 不写进代码；只存在你的浏览器本地存储中。</div>
@@ -146,31 +151,65 @@
     <div class="row">
       <button onclick="refreshRisk()">🛡 刷新风控检查</button>
     </div>
-    <div id="riskBox" style="margin-top:10px;"></div>
+
+    <div class="split" style="margin-top:10px;">
+      <div class="col box">
+        <div class="mut small">风险等级</div>
+        <div id="riskLevel" style="font-size:22px;font-weight:800;margin-top:6px;">-</div>
+      </div>
+      <div class="col box">
+        <div class="mut small">建议总仓位</div>
+        <div id="riskSuggest" style="font-size:22px;font-weight:800;margin-top:6px;">-</div>
+      </div>
+      <div class="col box">
+        <div class="mut small">主题集中度 Top1</div>
+        <div id="riskTheme" style="font-size:22px;font-weight:800;margin-top:6px;">-</div>
+      </div>
+      <div class="col box">
+        <div class="mut small">后端时区</div>
+        <div id="riskTz" style="font-size:22px;font-weight:800;margin-top:6px;">-</div>
+      </div>
+    </div>
+
+    <div class="list" id="riskIssues"></div>
+    <details style="margin-top:10px;">
+      <summary>主题分布（点击展开）</summary>
+      <div id="riskBreakdown" class="list"></div>
+    </details>
   </div>
 
   <div class="card">
     <h3>⑥ 技术指标 / 趋势（每只持仓）</h3>
     <div class="row">
-      <button onclick="refreshTA()">📊 刷新技术指标</button>
-      <button class="secondary" onclick="clearTACache()">清空技术缓存</button>
+      <button onclick="refreshTech()">📊 刷新技术指标</button>
+      <button class="secondary" onclick="clearTechCache()">清空技术缓存</button>
     </div>
-    <div class="mut small" style="margin-top:6px;">
-      国内基金：用东财历史净值计算；海外：用 stooq 日线（自动加 .us）。<br/>
-      注意：技术指标只是“数学计算结果”，不等于收益保证。
+    <div class="mut small" style="margin-top:8px;">
+      国内基金：用东财历史净值序列计算；海外Ticker：用 stooq 历史日线（自动补 .us）。
+      注意：技术指标只是数学计算结果，不等于收益保证。
     </div>
-    <div id="taBox" style="margin-top:10px;"></div>
+    <div id="techList" class="list"></div>
   </div>
 
   <div class="card">
     <h3>⑦ 板块动向（全板块：趋势 + 动量 + RSI，一眼看懂）</h3>
     <div class="row">
-      <button onclick="refreshRadar()">🧭 刷新板块动向</button>
+      <button onclick="refreshSectors()">🧭 刷新板块动向</button>
+      <input id="sectorSearch" placeholder="搜索板块/ETF，例如：黄金 / 医疗 / 半导体 / 印度..." oninput="renderSectors()" />
     </div>
-    <div class="mut small" style="margin-top:6px;">
-      这里不是预测：只是把“代表性ETF”的趋势/动量/RSI 计算出来，帮你快速发现热点/过热/过冷。
+    <div class="mut small" style="margin-top:8px;">
+      说明：这里不是预测，只是把代表性ETF的趋势/动量/RSI算出来，帮你快速发现“热/冷/上行/下行”。
     </div>
-    <div id="radarBox" style="margin-top:10px;"></div>
+
+    <details open style="margin-top:10px;">
+      <summary>Top（建议你优先关注的板块）</summary>
+      <div id="sectorTop" class="list"></div>
+    </details>
+
+    <details style="margin-top:10px;">
+      <summary>全部板块列表（点击展开；里面可滚动）</summary>
+      <div id="sectorAll" class="scroll" style="margin-top:8px;"></div>
+    </details>
   </div>
 
 </div>
@@ -206,21 +245,56 @@
     newsKeywords:"ic_news_keywords",
     newsPlan:"ic_news_plan",
     newsCache:"ic_news_cache",
+    techCache:"ic_tech_cache",
     riskCache:"ic_risk_cache",
-    taCache:"ic_ta_cache",
-    radarCache:"ic_radar_cache"
+    sectorCache:"ic_sector_cache",
   };
   const $ = (id)=>document.getElementById(id);
-  let editingIndex = -1;
 
-  function apiBase(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim();
-    return (base || "").replace(/\/+$/,"");
-  }
+  // ✅ 你后端域名：已默认写死
+  const DEFAULT_BACKEND = "https://invest-copilot-backend.onrender.com";
+
+  // ✅ 板块列表：你要加“煤炭/军工/AI/机器人/中国互联网/印度”等，直接往这里加
+  // 你说你自己会填 ETF symbol，我就给你结构，别让我去搜 ticker。
+  const SECTOR_ETFS = [
+    { theme:"全球成长&美股", symbol:"QQQ", name:"纳指100" },
+    { theme:"全球成长&美股", symbol:"SPY", name:"标普500" },
+    { theme:"科技", symbol:"XLK", name:"美股科技" },
+    { theme:"半导体", symbol:"SMH", name:"半导体" },
+    { theme:"金融/银行", symbol:"XLF", name:"金融" },
+    { theme:"医疗", symbol:"XLV", name:"医疗" },
+    { theme:"能源/石油", symbol:"XLE", name:"能源" },
+    { theme:"工业", symbol:"XLI", name:"工业" },
+    { theme:"公用事业", symbol:"XLU", name:"公用事业" },
+    { theme:"材料", symbol:"XLB", name:"材料" },
+    { theme:"消费(可选)", symbol:"XLY", name:"可选消费" },
+    { theme:"消费(必选)", symbol:"XLP", name:"必选消费" },
+    { theme:"地产", symbol:"XLRE", name:"房地产" },
+    { theme:"黄金", symbol:"GLD", name:"黄金" },
+    { theme:"白银", symbol:"SLV", name:"白银" },
+    { theme:"金矿", symbol:"GDX", name:"金矿" },
+    { theme:"新能源(美股)", symbol:"ICLN", name:"清洁能源" },
+    { theme:"光伏(美股)", symbol:"TAN", name:"光伏" },
+
+    // 👇 你想要的：煤炭/军工/AI/机器人/中国互联网/印度
+    // 你自己填 symbol 即可（我先放占位）
+    { theme:"军工", symbol:"ITA", name:"航空航天/军工（示例）" },
+    { theme:"航天/卫星", symbol:"UFO", name:"航天/卫星（示例）" },
+    // { theme:"煤炭", symbol:"XXXX", name:"煤炭" },
+    // { theme:"AI", symbol:"XXXX", name:"AI" },
+    // { theme:"机器人", symbol:"XXXX", name:"机器人" },
+    // { theme:"中国互联网", symbol:"XXXX", name:"中国互联网" },
+    // { theme:"印度", symbol:"XXXX", name:"印度" },
+
+    { theme:"新兴市场", symbol:"EEM", name:"新兴市场" },
+    { theme:"越南", symbol:"VNM", name:"越南" },
+  ];
+
+  let editingIndex = -1;
+  let sectorData = null;
 
   function load() {
-    const defaultBackend = "https://invest-copilot-backend.onrender.com";
-    const b = localStorage.getItem(LS.backend) || defaultBackend;
+    const b = localStorage.getItem(LS.backend) || DEFAULT_BACKEND;
     $("backend").value = b;
     localStorage.setItem(LS.backend, b);
 
@@ -236,18 +310,17 @@
 
     const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
     if (plan) renderThemes(plan.themes || []);
-
     const cache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
     if (cache) renderNews(cache.items || []);
 
     const risk = JSON.parse(localStorage.getItem(LS.riskCache) || "null");
     if (risk) renderRisk(risk);
 
-    const ta = JSON.parse(localStorage.getItem(LS.taCache) || "null");
-    if (ta) renderTA(ta);
+    const tech = JSON.parse(localStorage.getItem(LS.techCache) || "null");
+    if (tech) renderTech(tech);
 
-    const radar = JSON.parse(localStorage.getItem(LS.radarCache) || "null");
-    if (radar) renderRadar(radar);
+    const sec = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
+    if (sec) { sectorData = sec; renderSectors(); }
 
     render();
   }
@@ -260,12 +333,12 @@
   }
 
   async function ping(){
-    const base = apiBase();
+    const base = $("backend").value.trim();
     if(!base) return alert("先填写后端地址");
     try{
-      const r = await fetch(base + "/health");
+      const r = await fetch(base.replace(/\/+$/,"") + "/health");
       const j = await r.json();
-      $("pingResult").textContent = j.ok ? `✅ 后端正常｜TZ=${j.tz||"-"}｜local=${j.local||"-"}` : "⚠️ 后端异常";
+      $("pingResult").textContent = j.ok ? "✅ 后端服务正常" : "⚠️ 后端异常";
     }catch(e){
       $("pingResult").textContent = "❌ 连接失败：" + e.message;
     }
@@ -282,8 +355,7 @@
       type, code, amount, cost,
       name:"",
       price:null, mv:null, pnl:null, pnlPct:null,
-      _nav:null, _navDate:null, _estNav:null, _estPct:null, _time:null,
-      _err:null
+      _nav:null, _navDate:null, _estNav:null, _estPct:null, _time:null
     });
     persist(); render();
   }
@@ -319,7 +391,6 @@
     const code = $("mCode").value.trim();
     const amount = Number($("mAmount").value);
     const cost = $("mCost").value ? Number($("mCost").value) : null;
-
     if(!code || !amount) return alert("请填代码 + 金额");
 
     p.type = type;
@@ -330,7 +401,6 @@
     p.name = "";
     p.price = p.mv = p.pnl = p.pnlPct = null;
     p._nav = p._navDate = p._estNav = p._estPct = p._time = null;
-    p._err = null;
 
     persist(); render();
     closeModal();
@@ -354,8 +424,6 @@
       const pnlCls = (p.pnlPct ?? 0) >= 0 ? "ok" : "bad";
       const w = totalMV ? (p.mv||0)/totalMV*100 : 0;
 
-      const errLine = p._err ? `<div class="bad small" style="margin-top:4px;">${p._err}</div>` : "";
-
       const priceCell = (p.type === "CN_FUND")
         ? `
           ${p.price ?? "-"}
@@ -364,12 +432,8 @@
             <br/>
             估值: ${(typeof p._estNav === "number" ? p._estNav : "-")}（${(typeof p._estPct === "number" ? p._estPct : "-")}%）${p._time ? " " + p._time : ""}
           </div>
-          ${errLine}
         `
-        : `
-          ${p.price ?? "-"}
-          ${errLine}
-        `;
+        : `${p.price ?? "-"}`;
 
       tr.innerHTML = `
         <td><span class="pill">${p.type}</span></td>
@@ -393,60 +457,41 @@
   }
 
   async function refreshAll(){
-    const api = apiBase();
-    if(!api) return alert("先填后端地址");
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+    const api = base.replace(/\/+$/,"");
 
-    // 先清除错误
-    window.positions.forEach(p=>p._err=null);
-
-    // 国内基金：逐只拉（单只失败不影响其他）
+    // 国内基金
     for (const p of window.positions){
       if (p.type === "CN_FUND"){
-        try{
-          const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
-          const j = await r.json();
-          if(!j.ok) throw new Error(j.error || "fetch failed");
-
-          p.name = j.name || p.name || "";
-          // 价格：以 nav 为主（对账口径）
-          p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : ((typeof j.estNav === "number" && j.estNav > 0) ? j.estNav : null);
-          p._nav = (typeof j.nav === "number") ? j.nav : null;
-          p._navDate = j.navDate || null;
-          p._estNav = (typeof j.estNav === "number") ? j.estNav : null;
-          p._estPct = (typeof j.estPct === "number") ? j.estPct : null;
-          p._time = j.time || null;
-          if (j.note && j.note.includes("failed")) p._err = j.note;
-        }catch(e){
-          p._err = "拉取失败：" + e.message;
-          p.price = null;
-        }
+        const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
+        const j = await r.json();
+        p.name = j.name || p.name;
+        p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : j.estNav;
+        p._nav = (typeof j.nav === "number") ? j.nav : null;
+        p._navDate = j.navDate || null;
+        p._estNav = (typeof j.estNav === "number") ? j.estNav : null;
+        p._estPct = (typeof j.estPct === "number") ? j.estPct : null;
+        p._time = j.time || null;
       }
     }
 
     // 海外：批量拉
     const gl = window.positions.filter(p=>p.type==="US_TICKER");
     if (gl.length){
-      try{
-        const symbols = gl.map(p=>p.code).join(",");
-        const r = await fetch(`${api}/api/gl/quote?symbols=${encodeURIComponent(symbols)}`);
-        const j = await r.json();
-        const map = new Map((j.quotes||[]).map(q=>[q.symbol, q]));
-        for (const p of gl){
-          const q = map.get(p.code.toUpperCase());
-          if(q){
-            p.name = q.name || p.name || "";
-            p.price = q.price;
-          } else {
-            p._err = "stooq 暂无该标的报价";
-            p.price = null;
-          }
+      const symbols = gl.map(p=>p.code).join(",");
+      const r = await fetch(`${api}/api/gl/quote?symbols=${encodeURIComponent(symbols)}`);
+      const j = await r.json();
+      const map = new Map((j.quotes||[]).map(q=>[q.symbol, q]));
+      for (const p of gl){
+        const q = map.get(p.code.toUpperCase());
+        if(q){
+          p.name = q.name || p.name;
+          p.price = q.price;
         }
-      }catch(e){
-        gl.forEach(p=>p._err = "海外行情失败：" + e.message);
       }
     }
 
-    // 计算市值/盈亏（金额估算份额）
+    // 计算市值/盈亏
     for (const p of window.positions){
       if (typeof p.price === "number" && p.price > 0){
         const baseCost = (typeof p.cost === "number" && p.cost > 0) ? p.cost : p.price;
@@ -460,9 +505,6 @@
     }
 
     persist(); render();
-
-    // 顺手刷新风控（让主题识别用上最新名字+mv）
-    await refreshRisk();
   }
 
   // ---------- NEWS ----------
@@ -471,8 +513,8 @@
   }
 
   async function buildNewsPlan(){
-    const api = apiBase();
-    if(!api) return alert("先填后端地址");
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+    const api = base.replace(/\/+$/,"");
 
     const payload = window.positions.map(p=>({
       type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
@@ -492,7 +534,7 @@
     const kw = (j.keywords || []).join(",");
     $("newsKeywords").value = kw;
     localStorage.setItem(LS.newsKeywords, kw);
-    alert("✅ 已生成自动关键词（你也可以手动改）");
+    alert("✅ 已生成自动关键词（可手动修改后再抓新闻）");
   }
 
   function saveNewsKeywords(){
@@ -518,34 +560,27 @@
     }
     for (const it of items) {
       const div = document.createElement("div");
-      div.className = "newsItem";
-      const s = (it.sentiment || "neutral").toLowerCase();
-      const sTag = s==="bullish" ? "利好" : s==="bearish" ? "利空" : "中性";
-      const sCls = s==="bullish" ? "tagBull" : s==="bearish" ? "tagBear" : "";
-
-      const themes = Array.isArray(it.themes) ? it.themes.slice(0,3) : [];
-      const themeTags = themes.map(t=>`<span class="tag tagTheme">${t}</span>`).join("");
-
+      div.className = "li";
+      const sentiCls = it.sentiment==="bullish" ? "tagBull" : it.sentiment==="bearish" ? "tagBear" : "tagNeu";
+      const themeTags = (it.themes||[]).slice(0,3).map(t=>`<span class="tag tagTheme">${t}</span>`).join("");
       div.innerHTML = `
         <div class="small">
-          <span class="tag ${sCls}">${sTag}</span>
+          <span class="tag ${sentiCls}">${it.sentiment||"neutral"}</span>
           ${themeTags}
-          <span class="tag">score:${it.score ?? "-"}</span>
+          <span class="tag mono">score:${it.score ?? "-"}</span>
           <span class="mut">${it.pubDate || ""}</span>
         </div>
-        <div style="margin-top:6px;">
-          <a href="${it.link}" target="_blank" rel="noreferrer">${it.title}</a>
-        </div>
-        <div class="mut small" style="margin-top:6px;">${(it.description || "").slice(0, 160)}</div>
-        <div class="mut small">关键词：${it.keyword || "-"}</div>
+        <div style="margin-top:6px;"><a href="${it.link}" target="_blank" rel="noreferrer">${it.title}</a></div>
+        <div class="mut small" style="margin-top:6px;">${(it.description || "").slice(0, 180)}</div>
+        <div class="mut small" style="margin-top:6px;">关键词：${it.keyword||"-"}</div>
       `;
       box.appendChild(div);
     }
   }
 
   async function fetchNews(){
-    const api = apiBase();
-    if(!api) return alert("先填后端地址");
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+    const api = base.replace(/\/+$/,"");
 
     const kw = (localStorage.getItem(LS.newsKeywords) || $("newsKeywords").value || "").trim();
     if (!kw) return alert("先生成或填写关键词");
@@ -553,9 +588,9 @@
     $("newsList").innerHTML = `<div class="mut small">抓取中…</div>`;
 
     const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
-    const weights = plan && plan.weights ? encodeURIComponent(JSON.stringify(plan.weights)) : "";
+    const weights = plan && plan.weights ? JSON.stringify(plan.weights) : "";
+    const url = `${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=18&minScore=2${weights?`&weights=${encodeURIComponent(weights)}`:""}`;
 
-    const url = `${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=14&minScore=2` + (weights ? `&weights=${weights}` : "");
     const r = await fetch(url);
     const j = await r.json();
     if (!j.ok) return alert("抓取新闻失败：" + (j.error || ""));
@@ -565,230 +600,223 @@
   }
 
   // ---------- RISK ----------
-  function renderRisk(payload){
-    const box = $("riskBox");
-    if(!payload || !payload.ok){
-      box.innerHTML = `<div class="bad">风控加载失败</div>`;
-      return;
-    }
-    const r = payload.risk || {};
-    const top = payload.themeTop1 || {};
-    const single = payload.singleMax || {};
-    const warns = payload.warnings || [];
-
-    const warnHtml = warns.length
-      ? warns.map(w=>`<div class="${w.level==='高'?'bad':'mut'} small">【${w.level}】${w.text}</div>`).join("")
-      : `<div class="mut small">暂无明显红灯。</div>`;
-
-    const themeHtml = (payload.themes || []).slice(0,6)
-      .map(x=>`<div class="small"><span class="tag">${x.theme}</span> ${x.pct.toFixed(1)}%</div>`)
-      .join("");
-
-    box.innerHTML = `
-      <div class="row" style="gap:12px;">
-        <div class="card" style="flex:1;margin:0;">
-          <div class="mut">风险等级</div>
-          <div style="font-size:22px;font-weight:900;" class="${r.level==='高'?'bad':r.level==='中'?'':'ok'}">${r.level || "-"}</div>
-        </div>
-        <div class="card" style="flex:1;margin:0;">
-          <div class="mut">建议总仓位</div>
-          <div style="font-size:22px;font-weight:900;">${(r.suggestedTotalPos ?? "-")}%</div>
-        </div>
-        <div class="card" style="flex:1;margin:0;">
-          <div class="mut">主题集中度 Top1</div>
-          <div style="font-size:18px;font-weight:900;">${top.theme || "-"} ${top.pct!=null ? top.pct.toFixed(1)+"%" : ""}</div>
-          <div class="mut small">单一持仓：${single.code || "-"} ${single.pct!=null ? single.pct.toFixed(1)+"%" : ""}</div>
-        </div>
-      </div>
-      <div style="margin-top:10px;">${warnHtml}</div>
-      <div style="margin-top:10px;">
-        <div class="mut">主题分布（Top6）</div>
-        ${themeHtml || `<div class="mut small">暂无</div>`}
-      </div>
-    `;
-  }
-
   async function refreshRisk(){
-    const api = apiBase();
-    if(!api) return alert("先填后端地址");
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+    const api = base.replace(/\/+$/,"");
 
-    // 用 mv 优先，否则 amount
-    const totalMV = window.positions.reduce((s,p)=>s+(p.mv||0),0);
     const payload = window.positions.map(p=>({
-      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:(totalMV? p.mv : null)
+      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
     }));
-
-    const r = await fetch(`${api}/api/risk/check`,{
+    const r = await fetch(`${api}/api/risk/check`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ positions: payload })
     });
     const j = await r.json();
+    if (!j.ok) return alert("风控检查失败：" + (j.error||""));
+
     localStorage.setItem(LS.riskCache, JSON.stringify(j));
     renderRisk(j);
   }
 
-  // ---------- TA ----------
-  function clearTACache(){
-    localStorage.removeItem(LS.taCache);
-    $("taBox").innerHTML = `<div class="mut small">已清空。点“刷新技术指标”。</div>`;
+  function renderRisk(j){
+    $("riskLevel").textContent = j.riskLevel || "-";
+    $("riskSuggest").textContent = (j.suggestTotalPct!=null ? j.suggestTotalPct+"%" : "-");
+    $("riskTheme").textContent = (j.topTheme?.theme ? `${j.topTheme.theme} ${j.topTheme.pct}%` : "-");
+    $("riskTz").textContent = j.tz || "-";
+
+    const issues = $("riskIssues");
+    issues.innerHTML = "";
+    (j.issues||[]).forEach(x=>{
+      const div = document.createElement("div");
+      div.className = "li";
+      const lvl = x.level==="高" ? "tagBear" : x.level==="中" ? "tagNeu" : "tagBull";
+      div.innerHTML = `<span class="tag ${lvl}">风控 ${x.level}</span> <span class="small">${x.text}</span>`;
+      issues.appendChild(div);
+    });
+
+    const bk = $("riskBreakdown");
+    bk.innerHTML = "";
+    (j.themeBreakdown||[]).forEach(x=>{
+      const div = document.createElement("div");
+      div.className = "li";
+      div.innerHTML = `<span class="tag tagTheme">${x.theme}</span> <span class="small">占比 ${x.pct}%</span>`;
+      bk.appendChild(div);
+    });
   }
 
-  function renderTA(payload){
-    const box = $("taBox");
-    if(!payload || !payload.ok){
-      box.innerHTML = `<div class="bad">技术指标加载失败</div>`;
-      return;
-    }
+  // ---------- TECH ----------
+  function clearTechCache(){
+    localStorage.removeItem(LS.techCache);
+    $("techList").innerHTML = `<div class="mut small">已清空技术缓存。</div>`;
+  }
 
-    const items = payload.items || [];
-    if(!items.length){
-      box.innerHTML = `<div class="mut small">暂无数据。</div>`;
-      return;
-    }
+  async function refreshTech(){
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+    const api = base.replace(/\/+$/,"");
 
+    const payload = window.positions.map(p=>({
+      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
+    }));
+
+    $("techList").innerHTML = `<div class="mut small">计算中…（首次可能稍慢）</div>`;
+
+    const r = await fetch(`${api}/api/tech/batch`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ positions: payload })
+    });
+    const j = await r.json();
+    if (!j.ok) return alert("技术指标失败：" + (j.error||""));
+
+    localStorage.setItem(LS.techCache, JSON.stringify(j));
+    renderTech(j);
+  }
+
+  function renderTech(j){
+    const box = $("techList");
     box.innerHTML = "";
-    for(const it of items){
-      const div = document.createElement("div");
-      div.className = "newsItem";
+    const items = j.items || [];
+    if (!items.length) {
+      box.innerHTML = `<div class="mut small">暂无技术指标数据。</div>`;
+      return;
+    }
 
-      if(!it.ok){
+    for (const it of items) {
+      const div = document.createElement("div");
+      div.className = "li";
+
+      if (!it.ok) {
         div.innerHTML = `
-          <div style="font-weight:900;">
-            ${it.code} <span class="mut">${it.name || ""}</span> <span class="pill">${it.type || "-"}</span>
-          </div>
-          <div class="mut small">暂无数据（${it.reason || "unknown"}，count=${it.count || 0}）</div>
+          <div><b>${it.code || it.symbol || "-"}</b> <span class="mut">${it.name || ""}</span> <span class="pill">${it.type||""}</span></div>
+          <div class="mut small">暂无数据（${it.reason || "unknown"}，count=${it.count ?? 0}）</div>
         `;
         box.appendChild(div);
         continue;
       }
 
-      const trendCls = it.trend==="上行" ? "ok" : it.trend==="下行" ? "bad" : "mut";
-      const rsiCls = it.rsiTag==="RSI偏热" ? "bad" : it.rsiTag==="RSI偏冷" ? "ok" : "mut";
+      const rsiCls = it.rsiTag==="RSI偏热" ? "tagBear" : it.rsiTag==="RSI偏冷" ? "tagBull" : "tagNeu";
+      const trendCls = it.trend==="上行" ? "tagBull" : it.trend==="下行" ? "tagBear" : "tagNeu";
 
       div.innerHTML = `
-        <div style="font-weight:900;">
-          ${it.code} <span class="mut">${it.name || ""}</span> <span class="pill">${it.type}</span>
+        <div>
+          <b>${it.code || it.symbol}</b>
+          <span class="mut">${it.name || ""}</span>
+          <span class="pill">${it.type || ""}</span>
           <span class="tag ${trendCls}">${it.trend}</span>
           <span class="tag ${rsiCls}">${it.rsiTag}</span>
         </div>
         <div class="mut small mono" style="margin-top:6px;">
-          last=${num(it.last)} |
-          SMA20=${num(it.sma20)} |
-          SMA60=${num(it.sma60)} |
-          RSI14=${num(it.rsi14)} |
-          MACD=${num(it.macd)} |
-          Hist=${num(it.hist)} |
-          ret20=${num(it.ret20)}%
-          <span class="mut"> | count=${it.count}</span>
+          last=${fmt(it.last)} |
+          SMA20=${fmt(it.sma20)} |
+          SMA60=${fmt(it.sma60)} |
+          RSI14=${fmt(it.rsi14)} |
+          MACD=${fmt(it.macd)} |
+          Hist=${fmt(it.hist)} |
+          ret20=${fmt(it.ret20)}%
         </div>
       `;
       box.appendChild(div);
     }
   }
 
-  function num(x){
-    if(typeof x !== "number") return "-";
-    return (Math.round(x*10000)/10000).toString();
+  function fmt(x){
+    if (typeof x !== "number") return "-";
+    return (Math.abs(x) >= 10 ? x.toFixed(2) : x.toFixed(4));
   }
 
-  async function refreshTA(){
-    const api = apiBase();
-    if(!api) return alert("先填后端地址");
+  // ---------- SECTOR ----------
+  async function refreshSectors(){
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+    const api = base.replace(/\/+$/,"");
 
-    const payload = window.positions.map(p=>({
-      type:p.type, code:p.code, name:p.name
-    }));
+    $("sectorTop").innerHTML = `<div class="mut small">扫描中…（首次可能稍慢）</div>`;
+    $("sectorAll").innerHTML = "";
 
-    $("taBox").innerHTML = `<div class="mut small">计算中…（第一次会慢一点）</div>`;
-
-    const r = await fetch(`${api}/api/ta/positions`,{
+    const r = await fetch(`${api}/api/sector/scan`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload, days: 220 })
+      body: JSON.stringify({ items: SECTOR_ETFS })
     });
     const j = await r.json();
-    localStorage.setItem(LS.taCache, JSON.stringify(j));
-    renderTA(j);
+    if (!j.ok) return alert("板块动向失败：" + (j.error||""));
+
+    sectorData = j;
+    localStorage.setItem(LS.sectorCache, JSON.stringify(j));
+    renderSectors();
   }
 
-  // ---------- RADAR ----------
-  function renderRadar(payload){
-    const box = $("radarBox");
-    if(!payload || !payload.ok){
-      box.innerHTML = `<div class="bad">板块动向加载失败</div>`;
+  function renderSectors(){
+    const data = sectorData;
+    if (!data) return;
+
+    // top
+    const topBox = $("sectorTop");
+    topBox.innerHTML = "";
+    const top = data.top || [];
+    if (!top.length) {
+      topBox.innerHTML = `<div class="mut small">暂无可用结果（可能上游历史数据为空）。</div>`;
+    } else {
+      top.forEach(it => topBox.appendChild(sectorItemDiv(it)));
+    }
+
+    // all (search filter)
+    const key = ($("sectorSearch").value || "").trim().toLowerCase();
+    const allBox = $("sectorAll");
+    allBox.innerHTML = "";
+
+    const items = (data.items || []).slice();
+    const filtered = key
+      ? items.filter(x =>
+          (x.theme||"").toLowerCase().includes(key) ||
+          (x.symbol||"").toLowerCase().includes(key) ||
+          (x.name||"").toLowerCase().includes(key)
+        )
+      : items;
+
+    if (!filtered.length) {
+      allBox.innerHTML = `<div class="mut small">无匹配结果。</div>`;
       return;
     }
 
-    const top = payload.top || [];
-    const all = payload.items || [];
-
-    const topHtml = top.length
-      ? top.map(x=>{
-          const s = x.score ?? 0;
-          const cls = s >= 1.5 ? "ok" : s <= -1.5 ? "bad" : "mut";
-          return `
-            <div class="newsItem">
-              <div style="font-weight:900;">
-                <span class="tag tagTheme">${x.theme}</span>
-                ${x.symbol} <span class="mut">${x.name}</span>
-                <span class="tag ${cls}">score:${s}</span>
-              </div>
-              <div class="mut small mono" style="margin-top:6px;">
-                趋势=${x.trend} | RSI=${num(x.rsi14)}(${x.rsiTag}) | ret20=${num(x.ret20)}%
-              </div>
-            </div>
-          `;
-        }).join("")
-      : `<div class="mut small">暂无可用结果（可能上游当天波动/源返回异常）。</div>`;
-
-    // 全列表做滚动
-    const allHtml = all.map(x=>{
-      if(!x.ok){
-        return `<div class="newsItem"><div style="font-weight:900;"><span class="tag tagTheme">${x.theme}</span> ${x.symbol} <span class="mut">${x.name}</span></div><div class="mut small">暂无数据（${x.reason}，count=${x.count||0}）</div></div>`;
-      }
-      const s = x.score ?? 0;
-      const cls = s >= 1.5 ? "ok" : s <= -1.5 ? "bad" : "mut";
-      return `
-        <div class="newsItem">
-          <div style="font-weight:900;">
-            <span class="tag tagTheme">${x.theme}</span>
-            ${x.symbol} <span class="mut">${x.name}</span>
-            <span class="tag ${cls}">score:${s}</span>
-            <span class="tag">${x.trend}</span>
-            <span class="tag">${x.rsiTag}</span>
-          </div>
-          <div class="mut small mono" style="margin-top:6px;">
-            last=${num(x.last)} | SMA20=${num(x.sma20)} | SMA60=${num(x.sma60)} | ret20=${num(x.ret20)}% | count=${x.count}
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    box.innerHTML = `
-      <details open>
-        <summary>Top（建议你优先关注的板块）</summary>
-        <div style="padding-top:6px;">${topHtml}</div>
-      </details>
-
-      <div style="height:10px;"></div>
-
-      <details>
-        <summary>全部板块列表（点击展开；里面可滚动）</summary>
-        <div style="max-height:520px; overflow:auto; padding-top:6px;">${allHtml}</div>
-      </details>
-    `;
+    filtered.forEach(it => allBox.appendChild(sectorItemDiv(it)));
   }
 
-  async function refreshRadar(){
-    const api = apiBase();
-    if(!api) return alert("先填后端地址");
+  function sectorItemDiv(it){
+    const div = document.createElement("div");
+    div.className = "li";
 
-    $("radarBox").innerHTML = `<div class="mut small">计算中…</div>`;
-    const r = await fetch(`${api}/api/radar/sectors?days=260`);
-    const j = await r.json();
-    localStorage.setItem(LS.radarCache, JSON.stringify(j));
-    renderRadar(j);
+    if (!it.ok) {
+      div.innerHTML = `
+        <div>
+          <span class="tag tagTheme">${it.theme||"未分类"}</span>
+          <b class="mono">${it.symbol||"-"}</b>
+          <span class="mut">${it.name||""}</span>
+        </div>
+        <div class="mut small">暂无数据（${it.reason||"unknown"}，count=${it.count ?? 0}）</div>
+      `;
+      return div;
+    }
+
+    const trendCls = it.trend==="上行" ? "tagUp" : it.trend==="下行" ? "tagDown" : "tagNeu";
+    const rsiCls = it.rsiTag==="RSI偏热" ? "tagBear" : it.rsiTag==="RSI偏冷" ? "tagBull" : "tagNeu";
+    const momoCls = (typeof it.ret20==="number" && it.ret20>=2) ? "tagUp" : (typeof it.ret20==="number" && it.ret20<=-2) ? "tagDown" : "tagNeu";
+
+    div.innerHTML = `
+      <div>
+        <span class="tag tagTheme">${it.theme}</span>
+        <b class="mono">${it.symbol}</b>
+        <span class="mut">${it.name||""}</span>
+        <span class="tag ${trendCls}">${it.trend}</span>
+        <span class="tag ${momoCls}">动量${(typeof it.ret20==="number"?it.ret20.toFixed(2):"-")}%</span>
+        <span class="tag ${rsiCls}">${it.rsiTag}</span>
+        <span class="tag mono">score≈${it.score ?? "-"}</span>
+      </div>
+      <div class="mut small mono" style="margin-top:6px;">
+        last=${fmt(it.last)} | RSI14=${fmt(it.rsi14)} | ret20=${fmt(it.ret20)}%
+      </div>
+    `;
+    return div;
   }
 
   // ---------- AI ----------
@@ -799,33 +827,48 @@
   }
 
   async function runAI(){
-    const api = apiBase();
-    if(!api) return alert("先填后端地址");
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+    const api = base.replace(/\/+$/,"");
 
     const cfg = JSON.parse(localStorage.getItem(LS.ai) || "{}");
     if(!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("先填写 AI BaseUrl / Key / Model 并保存");
 
+    // 先确保：价格/盈亏最新
+    await refreshAll();
+
+    // 取持仓
     const holdings = window.positions.map(p=>({
       type:p.type, code:p.code, name:p.name, amount:p.amount, cost:p.cost,
       price:p.price, mv:p.mv, pnl:p.pnl, pnlPct:p.pnlPct,
       nav:p._nav, navDate:p._navDate, estNav:p._estNav, estPct:p._estPct, time:p._time
     }));
 
+    // 新闻缓存
     const newsCache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
     const newsItems = (newsCache && newsCache.items) ? newsCache.items : [];
+
+    // 风控缓存
+    const risk = JSON.parse(localStorage.getItem(LS.riskCache) || "null");
+
+    // 技术缓存
+    const tech = JSON.parse(localStorage.getItem(LS.techCache) || "null");
+
+    // 板块缓存
+    const sectors = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
 
     const messages = [
       { role:"system", content:
 `你是严格的组合风控与操作建议助手。不要编造数据。
+你必须优先使用我提供的：持仓/新闻/风控/技术指标/板块动向数据。
 必须输出四部分：
 1) 组合风险等级（低/中/高）+ 总仓位建议（例如70%）
-2) 每只持仓：今日动作（买/卖/不动）+一句理由
+2) 每只持仓：今日动作（买/卖/不动）+一句理由（引用风控/技术/新闻）
 3) 新闻/政策影响：从提供的新闻中提炼3-5条要点，并指出对每个主题/持仓的潜在影响（利好/利空/不确定）
-4) 未来3-6个月：最看好板块Top1 + 推荐基金/ETF代码 + 原因（结合宏观与新闻）
-注意：如果信息不足必须说“不足”。`
+4) 未来3-6个月：最看好板块Top1 + 推荐基金/ETF代码 + 原因（结合板块动向与新闻）
+注意：不要给出绝对化承诺，强调风险与条件。`
       },
       { role:"user", content:
-`我的持仓与价格/盈亏（JSON）：\n${JSON.stringify(holdings, null, 2)}\n\n新闻与政策（最多14条）：\n${JSON.stringify(newsItems, null, 2)}\n\n请按要求输出，格式清晰。`
+`【持仓与盈亏（JSON）】\n${JSON.stringify(holdings, null, 2)}\n\n【风控检查（JSON）】\n${JSON.stringify(risk, null, 2)}\n\n【技术指标（JSON）】\n${JSON.stringify(tech, null, 2)}\n\n【板块动向（JSON）】\n${JSON.stringify(sectors, null, 2)}\n\n【新闻（JSON，最多18条）】\n${JSON.stringify(newsItems, null, 2)}\n\n请按要求输出，格式清晰。`
       }
     ];
 
