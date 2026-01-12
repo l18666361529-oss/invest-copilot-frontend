@@ -195,8 +195,10 @@
     <h3>⑦ 板块动向（全板块：趋势 + 动量 + RSI，一眼看懂）</h3>
     <div class="row">
       <button onclick="refreshSectors()">🧭 刷新板块动向</button>
+      <button class="secondary" onclick="clearSectorCache()">清空板块缓存</button>
       <input id="sectorSearch" placeholder="搜索板块/ETF，例如：黄金 / 医疗 / 半导体 / 印度..." oninput="renderSectors()" />
     </div>
+    <div class="mut small" id="sectorStatus" style="margin-top:8px;"></div>
     <div class="mut small" style="margin-top:8px;">
       说明：这里不是预测，只是把代表性ETF的趋势/动量/RSI算出来，帮你快速发现“热/冷/上行/下行”。
     </div>
@@ -253,6 +255,37 @@
 
   // ✅ 你后端域名：已默认写死
   const DEFAULT_BACKEND = "https://invest-copilot-backend.onrender.com";
+  // ✅ UI 本地缓存 TTL（6小时）
+  const UI_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+  // ---------- 标签推导（避免出现 undefined） ----------
+  function deriveTrend(obj){
+    const sma20 = obj?.sma20, sma60 = obj?.sma60, last = obj?.last;
+    if (typeof sma20 === "number" && typeof sma60 === "number") {
+      if (sma20 > sma60 * 1.001) return "上行";
+      if (sma20 < sma60 * 0.999) return "下行";
+      return "震荡";
+    }
+    // 兜底：用 last vs sma20
+    if (typeof last === "number" && typeof sma20 === "number") {
+      if (last > sma20 * 1.002) return "上行";
+      if (last < sma20 * 0.998) return "下行";
+      return "震荡";
+    }
+    return null;
+  }
+  function deriveRsiTag(obj){
+    const rsi = obj?.rsi14;
+    if (typeof rsi !== "number") return null;
+    if (rsi >= 70) return "RSI偏热";
+    if (rsi <= 30) return "RSI偏冷";
+    return "RSI中性";
+  }
+  function tagHtml(text, cls){
+    if (!text) return "";
+    return `<span class="tag ${cls}">${text}</span>`;
+  }
+
 
   // ✅ 板块列表：你要加“煤炭/军工/AI/机器人/中国互联网/印度”等，直接往这里加
   // 你说你自己会填 ETF symbol，我就给你结构，别让我去搜 ticker。
@@ -651,6 +684,14 @@
     $("techList").innerHTML = `<div class="mut small">已清空技术缓存。</div>`;
   }
 
+  function clearSectorCache(){
+    localStorage.removeItem(LS.sectorCache);
+    sectorData = null;
+    $("sectorStatus").textContent = "已清空板块缓存。";
+    $("sectorTop").innerHTML = "";
+    $("sectorAll").innerHTML = "";
+  }
+
   async function refreshTech(){
     const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
     const api = base.replace(/\/+$/,"");
@@ -694,17 +735,19 @@
         box.appendChild(div);
         continue;
       }
+      const trend = it.trend || deriveTrend(it);
+      const rsiTag = it.rsiTag || deriveRsiTag(it);
 
-      const rsiCls = it.rsiTag==="RSI偏热" ? "tagBear" : it.rsiTag==="RSI偏冷" ? "tagBull" : "tagNeu";
-      const trendCls = it.trend==="上行" ? "tagBull" : it.trend==="下行" ? "tagBear" : "tagNeu";
+      const trendCls = trend==="上行" ? "tagBull" : trend==="下行" ? "tagBear" : "tagNeu";
+      const rsiCls   = rsiTag==="RSI偏热" ? "tagBear" : rsiTag==="RSI偏冷" ? "tagBull" : "tagNeu";
 
       div.innerHTML = `
         <div>
           <b>${it.code || it.symbol}</b>
           <span class="mut">${it.name || ""}</span>
           <span class="pill">${it.type || ""}</span>
-          <span class="tag ${trendCls}">${it.trend}</span>
-          <span class="tag ${rsiCls}">${it.rsiTag}</span>
+          ${tagHtml(trend, trendCls)}
+          ${tagHtml(rsiTag, rsiCls)}
         </div>
         <div class="mut small mono" style="margin-top:6px;">
           last=${fmt(it.last)} |
@@ -729,6 +772,15 @@
 async function fetchJsonTimeout(url, opts={}, timeoutMs=90000){
   const ctrl = new AbortController();
   const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+
+  // 如果外部也传了 signal（用于“停止扫描”），就联动中止
+  const ext = opts && opts.signal;
+  let extAbortHandler = null;
+  if (ext) {
+    extAbortHandler = () => ctrl.abort();
+    try { ext.addEventListener("abort", extAbortHandler, { once:true }); } catch {}
+  }
+
   try{
     const r = await fetch(url, { ...opts, signal: ctrl.signal });
     const text = await r.text();
@@ -737,9 +789,12 @@ async function fetchJsonTimeout(url, opts={}, timeoutMs=90000){
     if (!r.ok && j && j.ok !== false) j = { ok:false, error:`HTTP ${r.status}`, detail:j };
     return j;
   }catch(e){
-    throw new Error(e && e.name==="AbortError" ? `请求超时（>${Math.round(timeoutMs/1000)}s）` : String(e));
+    throw new Error(e && e.name==="AbortError" ? `请求超时/已中止（>${Math.round(timeoutMs/1000)}s）` : String(e));
   }finally{
     clearTimeout(t);
+    if (ext && extAbortHandler) {
+      try { ext.removeEventListener("abort", extAbortHandler); } catch {}
+    }
   }
 }
 
@@ -748,64 +803,87 @@ async function fetchJsonTimeout(url, opts={}, timeoutMs=90000){
 let sectorScanCtrl = null;
 
 async function refreshSectors(){
-  // 再点一次：停止
+  const statusEl = $("sectorStatus");
+
+  // 再点一次：停止扫描
   if (sectorScanCtrl) {
     sectorScanCtrl.abort();
     sectorScanCtrl = null;
-    $("sectorTop").innerHTML = `<div class="mut small">已停止扫描。</div>`;
+    statusEl.textContent = "已停止扫描。";
     return;
   }
 
   const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
   const api = base.replace(/\/+$/,"");
 
-  // 本地缓存（6小时）
+  // —— 先展示缓存（如果有），但不“静默结束”，会明确提示用户下一步怎么做 —— 
   const cached = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
-  if (cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS) {
+  const fresh = cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS;
+
+  // 第一次点：如果有新鲜缓存，先直接用缓存，提示“再点一次强制重新扫描”
+  if (fresh && !window.__sectorForceRefresh) {
     sectorData = cached;
     renderSectors();
     const mins = Math.round((Date.now() - cached._savedAt)/60000);
-    $("sectorTop").insertAdjacentHTML("afterbegin",
-      `<div class="mut small">已使用本地缓存（${mins} 分钟前）。如需强制刷新：先点击“清空板块缓存”（或控制台清理 ic_sector_cache）再扫描。</div>`);
+    statusEl.textContent = `已使用本地缓存（${mins} 分钟前）。如需强制重新扫描：再点一次“刷新板块动向”。`;
+    window.__sectorForceRefresh = true;
     return;
   }
+  window.__sectorForceRefresh = false;
 
+  // 开始分批扫描
   sectorScanCtrl = new AbortController();
   const batchSize = 5;
-  const intervalMs = 70000; // 70 秒
+  const intervalMs = 80000; // 80 秒更稳（避免 AV 免费限流）
   const total = SECTOR_ETFS.length;
 
-  // 结果合并
-  const merged = new Map(); // symbol -> item
+  // 如果已有旧结果，先渲染出来（让你看到“它在工作”）
+  if (cached && cached.items) {
+    sectorData = cached;
+    renderSectors();
+  }
 
-  // UI
-  $("sectorAll").innerHTML = "";
-  $("sectorTop").innerHTML = `<div class="mut small">分批扫描中… 0/${total}（每批${batchSize}个，每${Math.round(intervalMs/1000)}秒继续；再次点击按钮可停止）</div>`;
+  statusEl.textContent = `开始分批扫描… 0/${total}（每批${batchSize}个；每${Math.round(intervalMs/1000)}秒继续；再次点击可停止）`;
+
+  const merged = new Map();
+  // 先把已有缓存塞进 merged（续扫）
+  if (cached && Array.isArray(cached.items)) {
+    for (const it of cached.items) {
+      if (it && it.symbol) merged.set(it.symbol, it);
+    }
+  }
+
+  async function waitWithCountdown(ms){
+    const start = Date.now();
+    while (Date.now() - start < ms) {
+      if (sectorScanCtrl?.signal?.aborted) throw new Error("aborted");
+      const left = Math.max(0, ms - (Date.now() - start));
+      statusEl.textContent = `已完成 ${Math.min(merged.size,total)}/${total}，等待 ${Math.ceil(left/1000)} 秒后继续…（再次点击可停止）`;
+      await new Promise(r=>setTimeout(r, 1000));
+    }
+  }
 
   try{
     let done = 0;
+
     for (let i=0; i<total; i+=batchSize){
+      if (sectorScanCtrl.signal.aborted) throw new Error("aborted");
+
       const batch = SECTOR_ETFS.slice(i, i+batchSize);
+      statusEl.textContent = `扫描中… ${done}/${total}（本批 ${i+1}-${Math.min(i+batchSize,total)}）`;
 
-      $("sectorTop").innerHTML = `<div class="mut small">分批扫描中… ${done}/${total}（本批 ${i+1}-${Math.min(i+batchSize,total)}）</div>`;
-
-      // 单批请求（90s 超时）
       const j = await fetchJsonTimeout(`${api}/api/sector/scan`, {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ items: batch })
-      }, 90000);
+        body: JSON.stringify({ items: batch }),
+        signal: sectorScanCtrl.signal,
+      }, 60000);
 
-      if (!j || j.ok !== true) {
-        const msg = j?.error || j?.reason || "unknown";
-        $("sectorTop").innerHTML = `<div class="bad small">本批失败：${msg}（稍后会继续下一批）</div>`;
-      } else {
-        // 合并 items
+      if (j && j.ok === true) {
         (j.items || []).forEach(it => {
           if (it && it.symbol) merged.set(it.symbol, it);
         });
 
-        // 计算全局 top（按 score）
         const all = Array.from(merged.values());
         const okOnes = all.filter(x => x && x.ok);
         okOnes.sort((a,b)=>(b.score??-999)-(a.score??-999));
@@ -814,21 +892,23 @@ async function refreshSectors(){
         sectorData = { ok:true, build: j.build, tz: j.tz, top, items: all };
         renderSectors();
         localStorage.setItem(LS.sectorCache, JSON.stringify({ ...sectorData, _savedAt: Date.now() }));
+      } else {
+        const msg = j?.error || j?.reason || "unknown";
+        statusEl.textContent = `本批失败：${msg}（将继续下一批）`;
       }
 
       done = Math.min(total, i + batch.length);
 
-      // 最后一批不等待
       if (done >= total) break;
 
-      $("sectorTop").innerHTML = `<div class="mut small">已完成 ${done}/${total}，等待 ${Math.round(intervalMs/1000)} 秒后继续…（再次点击按钮可停止）</div>`;
-      await new Promise(r=>setTimeout(r, intervalMs));
+      // 提醒：如果你刚刷新过技术指标，建议等 1 分钟再扫板块（减少限流）
+      await waitWithCountdown(intervalMs);
     }
 
-    $("sectorTop").innerHTML = `<div class="good small">扫描完成 ✅ ${total}/${total}</div>`;
+    statusEl.textContent = `扫描完成 ✅ ${Math.min(merged.size,total)}/${total}（结果已缓存 6 小时）`;
   }catch(e){
     const msg = (e && e.message) ? e.message : String(e);
-    $("sectorTop").innerHTML = `<div class="bad small">扫描中断/失败：${msg}</div>`;
+    statusEl.textContent = (msg==="aborted") ? "已停止扫描。" : `扫描中断/失败：${msg}`;
   }finally{
     sectorScanCtrl = null;
   }
@@ -885,19 +965,22 @@ async function refreshSectors(){
       `;
       return div;
     }
+    const trend = it.trend || deriveTrend(it);
+    const rsiTag = it.rsiTag || deriveRsiTag(it);
 
-    const trendCls = it.trend==="上行" ? "tagUp" : it.trend==="下行" ? "tagDown" : "tagNeu";
-    const rsiCls = it.rsiTag==="RSI偏热" ? "tagBear" : it.rsiTag==="RSI偏冷" ? "tagBull" : "tagNeu";
-    const momoCls = (typeof it.ret20==="number" && it.ret20>=2) ? "tagUp" : (typeof it.ret20==="number" && it.ret20<=-2) ? "tagDown" : "tagNeu";
+    const trendCls = trend==="上行" ? "tagUp" : trend==="下行" ? "tagDown" : "tagNeu";
+    const rsiCls   = rsiTag==="RSI偏热" ? "tagBear" : rsiTag==="RSI偏冷" ? "tagBull" : "tagNeu";
+    const momoCls  = (typeof it.ret20==="number" && it.ret20>=2) ? "tagUp"
+                    : (typeof it.ret20==="number" && it.ret20<=-2) ? "tagDown" : "tagNeu";
 
     div.innerHTML = `
       <div>
         <span class="tag tagTheme">${it.theme}</span>
         <b class="mono">${it.symbol}</b>
         <span class="mut">${it.name||""}</span>
-        <span class="tag ${trendCls}">${it.trend}</span>
+        ${tagHtml(trend, trendCls)}
         <span class="tag ${momoCls}">动量${(typeof it.ret20==="number"?it.ret20.toFixed(2):"-")}%</span>
-        <span class="tag ${rsiCls}">${it.rsiTag}</span>
+        ${tagHtml(rsiTag, rsiCls)}
         <span class="tag mono">score≈${it.score ?? "-"}</span>
       </div>
       <div class="mut small mono" style="margin-top:6px;">
