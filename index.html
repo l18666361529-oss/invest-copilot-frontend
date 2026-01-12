@@ -833,8 +833,8 @@ async function refreshSectors(){
 
   // 开始分批扫描
   sectorScanCtrl = new AbortController();
-  const batchSize = 4;
-  const intervalMs = 90000; // 90 秒更稳（避免 AV 免费限流）
+  const batchSize = 1; // 每批1个，避免触发免费限流
+  const intervalMs = 15000; // 15秒/只（免费额度更稳）
   const total = SECTOR_ETFS.length;
 
   // 如果已有旧结果，先渲染出来（让你看到“它在工作”）
@@ -843,7 +843,7 @@ async function refreshSectors(){
     renderSectors();
   }
 
-  statusEl.textContent = `开始分批扫描… 0/${total}（每批${batchSize}个；每${Math.round(intervalMs/1000)}秒继续；再次点击可停止）`;
+  statusEl.textContent = `开始分批扫描… 0/${total}（每次扫1只；约${Math.ceil(total*intervalMs/1000/60)}分钟完成；再次点击可停止）`;
 
   const merged = new Map();
   // 先把已有缓存塞进 merged（续扫）
@@ -877,7 +877,7 @@ async function refreshSectors(){
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ items: batch }),
         signal: sectorScanCtrl.signal,
-      }, 60000);
+      }, 20000);
 
       if (j && j.ok === true) {
         (j.items || []).forEach(it => {
@@ -936,7 +936,7 @@ async function refreshSectors(){
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ items: batch }),
           signal: sectorScanCtrl.signal,
-        }, 60000);
+        }, 20000);
 
         if (j && j.ok === true) {
           (j.items || []).forEach(it => {
