@@ -293,35 +293,6 @@
   let editingIndex = -1;
   let sectorData = null;
 
-  // 前端缓存有效期：避免反复点刷新导致长时间等待
-  const UI_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6小时
-
-
-// ---- fetch with timeout (防止“卡住几小时没反应”) ----
-async function fetchJsonWithTimeout(url, options={}, timeoutMs=60000){
-  const ctrl = new AbortController();
-  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
-  try{
-    const r = await fetch(url, { ...options, signal: ctrl.signal });
-    const text = await r.text();
-    let j;
-    try{ j = JSON.parse(text); }
-    catch{
-      throw new Error(`接口返回非JSON（HTTP ${r.status}）：` + (text||"").slice(0,200));
-    }
-    if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
-    return j;
-  }catch(e){
-    if (e && e.name === "AbortError"){
-      throw new Error(`请求超时（>${Math.round(timeoutMs/1000)}s）。可能原因：后端冷启动/上游限流/扫描数量过多。建议先把 max 调小（例如 6~10）。`);
-    }
-    throw e;
-  }finally{
-    clearTimeout(t);
-  }
-}
-
-
   function load() {
     const b = localStorage.getItem(LS.backend) || DEFAULT_BACKEND;
     $("backend").value = b;
@@ -680,55 +651,29 @@ async function fetchJsonWithTimeout(url, options={}, timeoutMs=60000){
     $("techList").innerHTML = `<div class="mut small">已清空技术缓存。</div>`;
   }
 
-  async function refreshTech(force=false){
-  const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-  const api = base.replace(/\/+$/,"");
+  async function refreshTech(){
+    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+    const api = base.replace(/\/+$/,"");
 
-  // ✅ 优先用缓存（避免每次都长时间下载/计算）
-  const cached = JSON.parse(localStorage.getItem(LS.techCache) || "null");
-  if (!force && cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS) {
-    renderTech(cached);
-    const mins = Math.round((Date.now() - cached._savedAt) / 60000);
-    $("techList").insertAdjacentHTML("afterbegin",
-      `<div class="mut small">已使用本地缓存（${mins} 分钟前）。如需强制刷新：先点“清空技术缓存”，再点刷新。</div>`);
-    return;
-  }
+    const payload = window.positions.map(p=>({
+      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
+    }));
 
-  const payload = window.positions.map(p=>({
-    type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
-  }));
+    $("techList").innerHTML = `<div class="mut small">计算中…（首次可能稍慢）</div>`;
 
-  const t0 = Date.now();
-  let tick = 0;
-  const timer = setInterval(()=>{
-    tick++;
-    const sec = Math.floor((Date.now() - t0)/1000);
-    $("techList").innerHTML = `<div class="mut small">计算中… 已用 ${sec}s（首次可能较慢）</div>`;
-    if (tick > 600) clearInterval(timer);
-  }, 500);
-
-  try{
-    const j = await fetchJsonWithTimeout(`${api}/api/tech/batch`, {
-  method:"POST",
-  headers:{ "Content-Type":"application/json" },
-  body: JSON.stringify({ positions: payload })
-}, 90000);
-
+    const r = await fetch(`${api}/api/tech/batch`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ positions: payload })
+    });
+    const j = await r.json();
     if (!j.ok) return alert("技术指标失败：" + (j.error||""));
 
-    clearInterval(timer);
-    j._savedAt = Date.now();
     localStorage.setItem(LS.techCache, JSON.stringify(j));
     renderTech(j);
-  } catch(e){
-    const msg = (e && e.message) ? e.message : String(e);
-    $("techList").innerHTML = `<div class="bad small">技术指标请求失败：${msg}</div>`;
-  } finally {
-    clearInterval(timer);
   }
-}
 
-function renderTech(j){
+  function renderTech(j){
     const box = $("techList");
     box.innerHTML = "";
     const items = j.items || [];
@@ -780,57 +725,116 @@ function renderTech(j){
     return (Math.abs(x) >= 10 ? x.toFixed(2) : x.toFixed(4));
   }
 
-  // ---------- SECTOR ----------
-  async function refreshSectors(force=false){
-  const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-  const api = base.replace(/\/+$/,"");
-
-  // ✅ 优先用缓存：板块扫描会触发很多历史数据下载，第一次会慢
-  const cached = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
-  if (!force && cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS) {
-    sectorData = cached;
-    renderSectors();
-    const mins = Math.round((Date.now() - cached._savedAt) / 60000);
-    $("sectorTop").insertAdjacentHTML("afterbegin",
-      `<div class="mut small">已使用本地缓存（${mins} 分钟前）。如需强制刷新：先在控制台清理 ic_sector_cache，再点刷新。</div>`);
-    return;
-  }
-
-  const t0 = Date.now();
-  let tick = 0;
-  const timer = setInterval(()=>{
-    tick++;
-    const sec = Math.floor((Date.now() - t0)/1000);
-    $("sectorTop").innerHTML = `<div class="mut small">扫描中… 已用 ${sec}s（首次可能较慢）</div>`;
-    if (tick > 900) clearInterval(timer);
-  }, 500);
-  $("sectorAll").innerHTML = "";
-
+// ---------- HTTP helper (带超时，避免一直 pending) ----------
+async function fetchJsonTimeout(url, opts={}, timeoutMs=90000){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
   try{
-    const j = await fetchJsonWithTimeout(`${api}/api/sector/scan`, {
-  method:"POST",
-  headers:{ "Content-Type":"application/json" },
-  // ✅ 免费源很容易限流：默认只扫 10 个，稳定后你再调大
-  body: JSON.stringify({ items: SECTOR_ETFS, max: 10 })
-}, 120000);
-
-    if (!j.ok) return alert("板块动向失败：" + (j.error||""));
-
-    clearInterval(timer);
-    j._savedAt = Date.now();
-    sectorData = j;
-    localStorage.setItem(LS.sectorCache, JSON.stringify(j));
-    renderSectors();
-  } catch(e){
-    const msg = (e && e.message) ? e.message : String(e);
-    $("sectorTop").innerHTML = `<div class="bad small">板块扫描失败：${msg}</div>`;
-    $("sectorAll").innerHTML = `<div class="mut small">建议：先把 max 调小（例如 6~10），或稍后再试（AlphaVantage 免费版有频率限制）。</div>`;
-  } finally {
-    clearInterval(timer);
+    const r = await fetch(url, { ...opts, signal: ctrl.signal });
+    const text = await r.text();
+    let j = null;
+    try{ j = JSON.parse(text); }catch{ j = { ok:false, error:"non-json", head: text.slice(0,200) }; }
+    if (!r.ok && j && j.ok !== false) j = { ok:false, error:`HTTP ${r.status}`, detail:j };
+    return j;
+  }catch(e){
+    throw new Error(e && e.name==="AbortError" ? `请求超时（>${Math.round(timeoutMs/1000)}s）` : String(e));
+  }finally{
+    clearTimeout(t);
   }
 }
 
-function renderSectors(){
+  // ---------- SECTOR ----------
+  // ---------- SECTOR（分批扫描：每批 5 个，每 70 秒继续，避免 AlphaVantage 免费限流） ----------
+let sectorScanCtrl = null;
+
+async function refreshSectors(){
+  // 再点一次：停止
+  if (sectorScanCtrl) {
+    sectorScanCtrl.abort();
+    sectorScanCtrl = null;
+    $("sectorTop").innerHTML = `<div class="mut small">已停止扫描。</div>`;
+    return;
+  }
+
+  const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+  const api = base.replace(/\/+$/,"");
+
+  // 本地缓存（6小时）
+  const cached = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
+  if (cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS) {
+    sectorData = cached;
+    renderSectors();
+    const mins = Math.round((Date.now() - cached._savedAt)/60000);
+    $("sectorTop").insertAdjacentHTML("afterbegin",
+      `<div class="mut small">已使用本地缓存（${mins} 分钟前）。如需强制刷新：先点击“清空板块缓存”（或控制台清理 ic_sector_cache）再扫描。</div>`);
+    return;
+  }
+
+  sectorScanCtrl = new AbortController();
+  const batchSize = 5;
+  const intervalMs = 70000; // 70 秒
+  const total = SECTOR_ETFS.length;
+
+  // 结果合并
+  const merged = new Map(); // symbol -> item
+
+  // UI
+  $("sectorAll").innerHTML = "";
+  $("sectorTop").innerHTML = `<div class="mut small">分批扫描中… 0/${total}（每批${batchSize}个，每${Math.round(intervalMs/1000)}秒继续；再次点击按钮可停止）</div>`;
+
+  try{
+    let done = 0;
+    for (let i=0; i<total; i+=batchSize){
+      const batch = SECTOR_ETFS.slice(i, i+batchSize);
+
+      $("sectorTop").innerHTML = `<div class="mut small">分批扫描中… ${done}/${total}（本批 ${i+1}-${Math.min(i+batchSize,total)}）</div>`;
+
+      // 单批请求（90s 超时）
+      const j = await fetchJsonTimeout(`${api}/api/sector/scan`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ items: batch })
+      }, 90000);
+
+      if (!j || j.ok !== true) {
+        const msg = j?.error || j?.reason || "unknown";
+        $("sectorTop").innerHTML = `<div class="bad small">本批失败：${msg}（稍后会继续下一批）</div>`;
+      } else {
+        // 合并 items
+        (j.items || []).forEach(it => {
+          if (it && it.symbol) merged.set(it.symbol, it);
+        });
+
+        // 计算全局 top（按 score）
+        const all = Array.from(merged.values());
+        const okOnes = all.filter(x => x && x.ok);
+        okOnes.sort((a,b)=>(b.score??-999)-(a.score??-999));
+        const top = okOnes.slice(0, 3);
+
+        sectorData = { ok:true, build: j.build, tz: j.tz, top, items: all };
+        renderSectors();
+        localStorage.setItem(LS.sectorCache, JSON.stringify({ ...sectorData, _savedAt: Date.now() }));
+      }
+
+      done = Math.min(total, i + batch.length);
+
+      // 最后一批不等待
+      if (done >= total) break;
+
+      $("sectorTop").innerHTML = `<div class="mut small">已完成 ${done}/${total}，等待 ${Math.round(intervalMs/1000)} 秒后继续…（再次点击按钮可停止）</div>`;
+      await new Promise(r=>setTimeout(r, intervalMs));
+    }
+
+    $("sectorTop").innerHTML = `<div class="good small">扫描完成 ✅ ${total}/${total}</div>`;
+  }catch(e){
+    const msg = (e && e.message) ? e.message : String(e);
+    $("sectorTop").innerHTML = `<div class="bad small">扫描中断/失败：${msg}</div>`;
+  }finally{
+    sectorScanCtrl = null;
+  }
+}
+
+  function renderSectors(){
     const data = sectorData;
     if (!data) return;
 
