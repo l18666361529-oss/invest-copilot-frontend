@@ -293,6 +293,35 @@
   let editingIndex = -1;
   let sectorData = null;
 
+  // 前端缓存有效期：避免反复点刷新导致长时间等待
+  const UI_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6小时
+
+
+// ---- fetch with timeout (防止“卡住几小时没反应”) ----
+async function fetchJsonWithTimeout(url, options={}, timeoutMs=60000){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+  try{
+    const r = await fetch(url, { ...options, signal: ctrl.signal });
+    const text = await r.text();
+    let j;
+    try{ j = JSON.parse(text); }
+    catch{
+      throw new Error(`接口返回非JSON（HTTP ${r.status}）：` + (text||"").slice(0,200));
+    }
+    if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+    return j;
+  }catch(e){
+    if (e && e.name === "AbortError"){
+      throw new Error(`请求超时（>${Math.round(timeoutMs/1000)}s）。可能原因：后端冷启动/上游限流/扫描数量过多。建议先把 max 调小（例如 6~10）。`);
+    }
+    throw e;
+  }finally{
+    clearTimeout(t);
+  }
+}
+
+
   function load() {
     const b = localStorage.getItem(LS.backend) || DEFAULT_BACKEND;
     $("backend").value = b;
@@ -651,29 +680,55 @@
     $("techList").innerHTML = `<div class="mut small">已清空技术缓存。</div>`;
   }
 
-  async function refreshTech(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-    const api = base.replace(/\/+$/,"");
+  async function refreshTech(force=false){
+  const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+  const api = base.replace(/\/+$/,"");
 
-    const payload = window.positions.map(p=>({
-      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
-    }));
-
-    $("techList").innerHTML = `<div class="mut small">计算中…（首次可能稍慢）</div>`;
-
-    const r = await fetch(`${api}/api/tech/batch`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload })
-    });
-    const j = await r.json();
-    if (!j.ok) return alert("技术指标失败：" + (j.error||""));
-
-    localStorage.setItem(LS.techCache, JSON.stringify(j));
-    renderTech(j);
+  // ✅ 优先用缓存（避免每次都长时间下载/计算）
+  const cached = JSON.parse(localStorage.getItem(LS.techCache) || "null");
+  if (!force && cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS) {
+    renderTech(cached);
+    const mins = Math.round((Date.now() - cached._savedAt) / 60000);
+    $("techList").insertAdjacentHTML("afterbegin",
+      `<div class="mut small">已使用本地缓存（${mins} 分钟前）。如需强制刷新：先点“清空技术缓存”，再点刷新。</div>`);
+    return;
   }
 
-  function renderTech(j){
+  const payload = window.positions.map(p=>({
+    type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
+  }));
+
+  const t0 = Date.now();
+  let tick = 0;
+  const timer = setInterval(()=>{
+    tick++;
+    const sec = Math.floor((Date.now() - t0)/1000);
+    $("techList").innerHTML = `<div class="mut small">计算中… 已用 ${sec}s（首次可能较慢）</div>`;
+    if (tick > 600) clearInterval(timer);
+  }, 500);
+
+  try{
+    const j = await fetchJsonWithTimeout(`${api}/api/tech/batch`, {
+  method:"POST",
+  headers:{ "Content-Type":"application/json" },
+  body: JSON.stringify({ positions: payload })
+}, 90000);
+
+    if (!j.ok) return alert("技术指标失败：" + (j.error||""));
+
+    clearInterval(timer);
+    j._savedAt = Date.now();
+    localStorage.setItem(LS.techCache, JSON.stringify(j));
+    renderTech(j);
+  } catch(e){
+    const msg = (e && e.message) ? e.message : String(e);
+    $("techList").innerHTML = `<div class="bad small">技术指标请求失败：${msg}</div>`;
+  } finally {
+    clearInterval(timer);
+  }
+}
+
+function renderTech(j){
     const box = $("techList");
     box.innerHTML = "";
     const items = j.items || [];
@@ -726,27 +781,56 @@
   }
 
   // ---------- SECTOR ----------
-  async function refreshSectors(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-    const api = base.replace(/\/+$/,"");
+  async function refreshSectors(force=false){
+  const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
+  const api = base.replace(/\/+$/,"");
 
-    $("sectorTop").innerHTML = `<div class="mut small">扫描中…（首次可能稍慢）</div>`;
-    $("sectorAll").innerHTML = "";
+  // ✅ 优先用缓存：板块扫描会触发很多历史数据下载，第一次会慢
+  const cached = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
+  if (!force && cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS) {
+    sectorData = cached;
+    renderSectors();
+    const mins = Math.round((Date.now() - cached._savedAt) / 60000);
+    $("sectorTop").insertAdjacentHTML("afterbegin",
+      `<div class="mut small">已使用本地缓存（${mins} 分钟前）。如需强制刷新：先在控制台清理 ic_sector_cache，再点刷新。</div>`);
+    return;
+  }
 
-    const r = await fetch(`${api}/api/sector/scan`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ items: SECTOR_ETFS })
-    });
-    const j = await r.json();
+  const t0 = Date.now();
+  let tick = 0;
+  const timer = setInterval(()=>{
+    tick++;
+    const sec = Math.floor((Date.now() - t0)/1000);
+    $("sectorTop").innerHTML = `<div class="mut small">扫描中… 已用 ${sec}s（首次可能较慢）</div>`;
+    if (tick > 900) clearInterval(timer);
+  }, 500);
+  $("sectorAll").innerHTML = "";
+
+  try{
+    const j = await fetchJsonWithTimeout(`${api}/api/sector/scan`, {
+  method:"POST",
+  headers:{ "Content-Type":"application/json" },
+  // ✅ 免费源很容易限流：默认只扫 10 个，稳定后你再调大
+  body: JSON.stringify({ items: SECTOR_ETFS, max: 10 })
+}, 120000);
+
     if (!j.ok) return alert("板块动向失败：" + (j.error||""));
 
+    clearInterval(timer);
+    j._savedAt = Date.now();
     sectorData = j;
     localStorage.setItem(LS.sectorCache, JSON.stringify(j));
     renderSectors();
+  } catch(e){
+    const msg = (e && e.message) ? e.message : String(e);
+    $("sectorTop").innerHTML = `<div class="bad small">板块扫描失败：${msg}</div>`;
+    $("sectorAll").innerHTML = `<div class="mut small">建议：先把 max 调小（例如 6~10），或稍后再试（AlphaVantage 免费版有频率限制）。</div>`;
+  } finally {
+    clearInterval(timer);
   }
+}
 
-  function renderSectors(){
+function renderSectors(){
     const data = sectorData;
     if (!data) return;
 
