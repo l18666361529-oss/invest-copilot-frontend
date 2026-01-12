@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>投资副驾驶 v1（专业版）</title>
+  <title>NEON QUANT // 霓虹投研舱 v1</title>
   <style>
     :root{--bg:#0b1220;--card:#0f1a33;--line:#1f2a44;--txt:#e6edf7;--mut:#9fb0d0;--ok:#30d158;--bad:#ff453a;--btn:#2f6bff;}
     body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial}
@@ -51,7 +51,7 @@
   </style>
 </head>
 <body>
-<header>📈 投资副驾驶 v1（专业版）</header>
+<header>📈 NEON QUANT // 霓虹投研舱 v1</header>
 <div class="wrap">
 
   <div class="card">
@@ -818,7 +818,7 @@ async function refreshSectors(){
 
   // —— 先展示缓存（如果有），但不“静默结束”，会明确提示用户下一步怎么做 —— 
   const cached = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
-  const fresh = cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS;
+  const fresh = cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS && !cached._hasFailures;
 
   // 第一次点：如果有新鲜缓存，先直接用缓存，提示“再点一次强制重新扫描”
   if (fresh && !window.__sectorForceRefresh) {
@@ -833,8 +833,8 @@ async function refreshSectors(){
 
   // 开始分批扫描
   sectorScanCtrl = new AbortController();
-  const batchSize = 5;
-  const intervalMs = 80000; // 80 秒更稳（避免 AV 免费限流）
+  const batchSize = 4;
+  const intervalMs = 90000; // 90 秒更稳（避免 AV 免费限流）
   const total = SECTOR_ETFS.length;
 
   // 如果已有旧结果，先渲染出来（让你看到“它在工作”）
@@ -891,7 +891,8 @@ async function refreshSectors(){
 
         sectorData = { ok:true, build: j.build, tz: j.tz, top, items: all };
         renderSectors();
-        localStorage.setItem(LS.sectorCache, JSON.stringify({ ...sectorData, _savedAt: Date.now() }));
+        const failCnt2 = all.filter(x => x && x.ok===false).length;
+        localStorage.setItem(LS.sectorCache, JSON.stringify({ ...sectorData, _savedAt: Date.now(), _hasFailures: failCnt2>0 }));
       } else {
         const msg = j?.error || j?.reason || "unknown";
         statusEl.textContent = `本批失败：${msg}（将继续下一批）`;
@@ -905,7 +906,66 @@ async function refreshSectors(){
       await waitWithCountdown(intervalMs);
     }
 
-    statusEl.textContent = `扫描完成 ✅ ${Math.min(merged.size,total)}/${total}（结果已缓存 6 小时）`;
+        // 自动重试：如果有失败项（多为 AlphaVantage 限流），冷却后再补扫 1-2 轮
+    const maxRetryPasses = 2;
+    const retryBatchSize = 3;
+    const retryIntervalMs = 70000;
+
+    for (let pass = 1; pass <= maxRetryPasses; pass++) {
+      const todoSyms = SECTOR_ETFS
+        .map(x => x.symbol)
+        .filter(sym => {
+          const r = merged.get(sym);
+          return !r || r.ok !== true;
+        });
+
+      if (!todoSyms.length) break;
+
+      statusEl.textContent = `发现 ${todoSyms.length} 个失败项，冷却后自动重试（第 ${pass}/${maxRetryPasses} 轮）…`;
+      await waitWithCountdown(retryIntervalMs);
+
+      for (let k = 0; k < todoSyms.length; k += retryBatchSize) {
+        if (sectorScanCtrl.signal.aborted) throw new Error("aborted");
+        const chunkSyms = todoSyms.slice(k, k + retryBatchSize);
+        const batch = SECTOR_ETFS.filter(x => chunkSyms.includes(x.symbol));
+
+        statusEl.textContent = `重试中（第 ${pass} 轮）… ${k + 1}-${Math.min(k + retryBatchSize, todoSyms.length)}/${todoSyms.length}`;
+
+        const j = await fetchJsonTimeout(`${api}/api/sector/scan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: batch }),
+          signal: sectorScanCtrl.signal,
+        }, 60000);
+
+        if (j && j.ok === true) {
+          (j.items || []).forEach(it => {
+            if (it && it.symbol) merged.set(it.symbol, it);
+          });
+
+          const all = Array.from(merged.values());
+          const okOnes = all.filter(x => x && x.ok);
+          okOnes.sort((a, b) => (b.score ?? -999) - (a.score ?? -999));
+          const top = okOnes.slice(0, 3);
+
+          sectorData = { ok: true, build: j.build, tz: j.tz, top, items: all };
+          renderSectors();
+          const failCnt2 = all.filter(x => x && x.ok===false).length;
+          localStorage.setItem(LS.sectorCache, JSON.stringify({ ...sectorData, _savedAt: Date.now(), _hasFailures: failCnt2>0 }));
+        }
+
+        // 重试间隔（避免再次触发限流）
+        if (k + retryBatchSize < todoSyms.length) {
+          await waitWithCountdown(retryIntervalMs);
+        }
+      }
+    }
+
+    const allFinal = Array.from(merged.values());
+    const failCnt = allFinal.filter(x => x && x.ok === false).length;
+    statusEl.textContent = failCnt
+      ? `扫描完成 ✅ ${Math.min(merged.size, total)}/${total}（仍有 ${failCnt} 个失败：多为数据源限流，可稍后再点“刷新板块动向”重试）`
+      : `扫描完成 ✅ ${Math.min(merged.size, total)}/${total}（结果已缓存 6 小时）`;
   }catch(e){
     const msg = (e && e.message) ? e.message : String(e);
     statusEl.textContent = (msg==="aborted") ? "已停止扫描。" : `扫描中断/失败：${msg}`;
