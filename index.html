@@ -2,1125 +2,1701 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NEON QUANT // 霓虹投研舱 v1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NEON QUANT // NightCity Terminal</title>
   <style>
-    :root{--bg:#0b1220;--card:#0f1a33;--line:#1f2a44;--txt:#e6edf7;--mut:#9fb0d0;--ok:#30d158;--bad:#ff453a;--btn:#2f6bff;}
-    body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial}
-    header{padding:14px 16px;background:#061027;border-bottom:1px solid var(--line);font-weight:700}
-    .wrap{padding:14px;max-width:1100px;margin:0 auto}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-    h3{margin:0 0 10px;font-size:16px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input,select,textarea{background:#07122b;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:15px;flex:1;min-width:140px}
-    textarea{min-height:110px}
-    button{background:var(--btn);border:none;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;cursor:pointer}
-    button.secondary{background:#13224a;border:1px solid var(--line);color:var(--txt)}
-    button.danger{background:#3a1020;border:1px solid #6a2233}
-    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
-    th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:center;vertical-align:top}
-    .mut{color:var(--mut)}
-    .ok{color:var(--ok)} .bad{color:var(--bad)}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);font-size:12px}
-    .small{font-size:12px;line-height:1.25}
-    .split{display:flex;gap:10px;flex-wrap:wrap}
-    .col{flex:1;min-width:300px}
-    .box{border:1px solid var(--line);border-radius:12px;background:#0a1430;padding:10px}
-    .list{margin-top:10px}
-    .li{padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:#0a1430}
-    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);margin-right:6px}
-    .tagUp{color:var(--ok);border-color:rgba(48,209,88,.35)}
-    .tagDown{color:var(--bad);border-color:rgba(255,69,58,.35)}
-    .tagNeu{color:var(--mut)}
-    .tagBull{color:var(--ok);border-color:rgba(48,209,88,.35)}
-    .tagBear{color:var(--bad);border-color:rgba(255,69,58,.35)}
-    .tagTheme{color:#c7dfff;border-color:rgba(199,215,255,.25)}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    details summary{cursor:pointer;color:#c7dfff}
-    .scroll{max-height:420px;overflow:auto;padding-right:6px}
-    .sep{height:1px;background:var(--line);margin:10px 0}
-    a{color:#bcd1ff;text-decoration:none}
-    a:hover{text-decoration:underline}
-
-    /* Modal */
-    .modalMask{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
-    .modal{width:min(820px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
-    .modal h4{margin:0 0 10px}
-    .modal .row{margin-top:10px}
-    .modal .footer{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+    :root{
+      --bg0:#07070a;
+      --bg1:#0b0b12;
+      --card:#0f1020;
+      --card2:#12142a;
+      --fg:#e8e8ff;
+      --muted:#a7a7d6;
+      --muted2:#7f80b3;
+      --line:#23244a;
+      --cyan:#38f6ff;
+      --pink:#ff3cf0;
+      --lime:#8dff6a;
+      --amber:#ffd25e;
+      --danger:#ff4d6d;
+      --shadow: 0 10px 30px rgba(0,0,0,.55);
+      --radius:16px;
+      --radius2:22px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background: radial-gradient(1200px 800px at 20% 0%, rgba(255,60,240,.12), transparent 55%),
+                                      radial-gradient(900px 700px at 80% 10%, rgba(56,246,255,.12), transparent 55%),
+                                      radial-gradient(900px 700px at 60% 90%, rgba(141,255,106,.08), transparent 55%),
+                                      linear-gradient(180deg, var(--bg0), var(--bg1));
+               color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    }
+    a{ color:var(--cyan); text-decoration:none; }
+    .wrap{ max-width:1100px; margin:0 auto; padding:18px 14px 110px; }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 14px; border:1px solid var(--line); background:linear-gradient(180deg, rgba(18,20,42,.85), rgba(15,16,32,.78));
+      border-radius: var(--radius2); box-shadow: var(--shadow);
+      position:sticky; top:10px; z-index:10;
+      backdrop-filter: blur(10px);
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px; min-width:0;
+    }
+    .logo{
+      width:36px; height:36px; border-radius:12px;
+      background: conic-gradient(from 220deg, var(--cyan), var(--pink), var(--lime), var(--cyan));
+      box-shadow: 0 0 0 1px rgba(56,246,255,.25), 0 0 26px rgba(255,60,240,.18);
+    }
+    .title{ line-height:1.1; min-width:0;}
+    .title h1{ margin:0; font-size:14px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .title .sub{ font-size:12px; color:var(--muted); margin-top:4px; }
+    .statuspill{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .pill{
+      padding:6px 10px; border:1px solid var(--line); border-radius:999px;
+      background: rgba(10,10,18,.6);
+    }
+    .grid{
+      display:grid; grid-template-columns: 1fr; gap:14px; margin-top:14px;
+    }
+    @media (min-width: 980px){
+      .grid{ grid-template-columns: 1.1fr .9fr; }
+    }
+    .card{
+      border:1px solid var(--line);
+      border-radius: var(--radius2);
+      background: linear-gradient(180deg, rgba(18,20,42,.85), rgba(15,16,32,.8));
+      box-shadow: var(--shadow);
+      padding:14px;
+      backdrop-filter: blur(10px);
+    }
+    .card h2{
+      margin:0 0 10px; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--fg);
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+    }
+    .muted{ color:var(--muted); }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    input, select, textarea, button{
+      font: inherit;
+      color: var(--fg);
+    }
+    input, select, textarea{
+      background: rgba(7,7,10,.6);
+      border:1px solid var(--line);
+      border-radius: 12px;
+      padding:10px 10px;
+      outline:none;
+      width:100%;
+    }
+    textarea{ min-height:92px; resize:vertical; }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      border-radius: 999px;
+      padding:10px 12px;
+      border:1px solid rgba(56,246,255,.35);
+      background: linear-gradient(180deg, rgba(56,246,255,.14), rgba(255,60,240,.08));
+      box-shadow: 0 0 0 1px rgba(56,246,255,.08), 0 10px 22px rgba(0,0,0,.35);
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{ filter: brightness(1.06); }
+    .btn.secondary{
+      border:1px solid var(--line);
+      background: rgba(7,7,10,.55);
+    }
+    .btn.danger{
+      border:1px solid rgba(255,77,109,.35);
+      background: linear-gradient(180deg, rgba(255,77,109,.18), rgba(255,60,240,.08));
+    }
+    .btn.small{ padding:7px 10px; font-size:12px; }
+    .two{
+      display:grid; grid-template-columns:1fr; gap:10px;
+    }
+    @media (min-width: 720px){
+      .two{ grid-template-columns:1fr 1fr; }
+    }
+    .tbl{
+      width:100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow:hidden;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(7,7,10,.45);
+    }
+    .tbl th, .tbl td{
+      text-align:left;
+      padding:10px 10px;
+      border-bottom:1px solid rgba(35,36,74,.65);
+      font-size:12px;
+      vertical-align:top;
+    }
+    .tbl th{ color:var(--muted); font-weight:600; background: rgba(15,16,32,.35); }
+    .tbl tr:last-child td{ border-bottom:none; }
+    .tag{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px; border:1px solid var(--line);
+      background: rgba(15,16,32,.5);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .tag.good{ border-color: rgba(141,255,106,.35); color: #d7ffd0; }
+    .tag.warn{ border-color: rgba(255,210,94,.35); color: #fff0c6; }
+    .tag.bad{ border-color: rgba(255,77,109,.35); color: #ffd0da; }
+    .tag.info{ border-color: rgba(56,246,255,.35); color: #d7fbff; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .floating{
+      position: fixed; right: 14px; bottom: 14px;
+      display:flex; flex-direction:column; gap:10px; z-index: 50;
+    }
+    .fab{
+      width:52px; height:52px; border-radius:18px;
+      border:1px solid rgba(56,246,255,.35);
+      background: linear-gradient(180deg, rgba(56,246,255,.18), rgba(255,60,240,.10));
+      box-shadow: var(--shadow);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .fab span{ font-size:18px; }
+    .modal-backdrop{
+      position: fixed; inset:0; background: rgba(0,0,0,.66);
+      display:none; align-items:center; justify-content:center;
+      padding:16px; z-index: 60;
+    }
+    .modal{
+      width:min(980px, 100%);
+      max-height: 86vh;
+      overflow:auto;
+      border-radius: 22px;
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(18,20,42,.95), rgba(12,12,20,.92));
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .modal header{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      padding-bottom:10px; border-bottom:1px solid rgba(35,36,74,.7);
+      margin-bottom:12px;
+    }
+    .modal header h3{ margin:0; font-size:13px; letter-spacing:.08em; text-transform:uppercase;}
+    .modal header p{ margin:6px 0 0; color:var(--muted); font-size:12px; }
+    .xbtn{
+      width:38px; height:38px; border-radius:14px;
+      border:1px solid var(--line); background: rgba(7,7,10,.5);
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
+    }
+    .kbd{ padding:2px 6px; border:1px solid var(--line); border-radius:8px; background:rgba(7,7,10,.5); font-size:12px;}
+    .hr{ height:1px; background: rgba(35,36,74,.7); margin:12px 0; }
+    .small{ font-size:12px; color:var(--muted); }
+    .okdot{ display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--lime); box-shadow:0 0 12px rgba(141,255,106,.35);}
+    .baddot{ display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--danger); box-shadow:0 0 12px rgba(255,77,109,.35);}
   </style>
 </head>
 <body>
-<header>📈 NEON QUANT // 霓虹投研舱 v1</header>
-<div class="wrap">
-
-  <div class="card">
-    <h3>① 后端地址（已默认填好）</h3>
-    <div class="row">
-      <input id="backend" placeholder="例如：https://xxx.onrender.com" />
-      <button class="secondary" onclick="saveBackend()">保存</button>
-      <button class="secondary" onclick="ping()">测试</button>
-    </div>
-    <div class="mut" id="pingResult" style="margin-top:8px;"></div>
-  </div>
-
-  <div class="card">
-    <h3>② 添加持仓</h3>
-    <div class="row">
-      <select id="type">
-        <option value="CN_FUND">国内基金（6位）</option>
-        <option value="US_TICKER">海外标的（Ticker）</option>
-      </select>
-      <input id="code" placeholder="基金代码/Ticker：025167 / SPY" />
-      <input id="amount" type="number" placeholder="持有金额（元或美元）" />
-      <input id="cost" type="number" placeholder="成本净值/成本价（可选）" />
-      <button onclick="add()">添加</button>
-    </div>
-
-    <div class="row" style="margin-top:10px;">
-      <button onclick="refreshAll()">🔄 刷新真实价格并计算盈亏</button>
-      <button class="secondary" onclick="clearAll()">清空</button>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>类型</th><th>代码</th><th>名称</th><th>现价</th><th>市值</th><th>盈亏</th><th>盈亏率</th><th>仓位</th><th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="tb"></tbody>
-    </table>
-
-    <div class="mut" id="sum" style="margin-top:10px;"></div>
-  </div>
-
-  <div class="card">
-    <h3>③ 新闻与政策（自动随持仓变化）</h3>
-    <div class="split">
-      <div class="col">
-        <div class="row">
-          <button class="secondary" onclick="buildNewsPlan()">🧠 自动生成关键词</button>
-          <button onclick="fetchNews()">🗞 抓取新闻</button>
-        </div>
-        <div class="mut small" style="margin-top:8px;">
-          已启用：按权重分配配额 + 相关度评分过滤（minScore=2）。
-        </div>
-
-        <div style="margin-top:10px;">
-          <div class="mut">当前主题（自动）：</div>
-          <div id="themes" class="small"></div>
-        </div>
-
-        <div style="margin-top:10px;">
-          <div class="mut">关键词池（可手动增删，用逗号分隔）：</div>
-          <input id="newsKeywords" placeholder="例如：美联储,降息,恒生科技,科创50,越南股市..." />
-          <div class="row" style="margin-top:8px;">
-            <button class="secondary" onclick="saveNewsKeywords()">保存关键词</button>
-            <button class="secondary" onclick="resetNewsKeywords()">重置为自动关键词</button>
-          </div>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div class="title">
+          <h1>NEON QUANT // NightCity Terminal</h1>
+          <div class="sub">赛博投研舱 · Proxy 板块雷达 · 低维护动作建议</div>
         </div>
       </div>
+      <div class="statuspill">
+        <div class="pill"><span id="healthDot" class="baddot"></span> <span id="healthText">后端未检测</span></div>
+        <div class="pill">Backend: <span class="mono" id="backendText"></span></div>
+      </div>
+    </div>
 
-      <div class="col">
-        <div class="mut">新闻列表（最近）：</div>
-        <details open style="margin-top:8px;">
-          <summary>点击折叠/展开（列表可滚动）</summary>
-          <div id="newsList" class="scroll" style="margin-top:8px;"></div>
+    <div class="grid">
+      <!-- Left: Core -->
+      <div class="card">
+        <h2>连接与数据</h2>
+
+        <div class="two">
+          <div>
+            <div class="small">后端域名（Render）</div>
+            <input id="apiBase" placeholder="https://xxx.onrender.com" />
+            <div class="row" style="margin-top:10px;">
+              <button class="btn small" id="btnHealth">测试后端</button>
+              <button class="btn small secondary" id="btnClearLocal">清理本地缓存</button>
+            </div>
+            <div class="small" style="margin-top:8px;">提示：手机端建议用无痕窗口或 <span class="kbd">Ctrl+F5</span> 强刷以避免旧缓存。</div>
+          </div>
+
+          <div>
+            <div class="small">新闻摘要（可粘贴，可空）</div>
+            <textarea id="newsBox" placeholder="把你整理的新闻摘要贴在这里（中英都行）。系统会一起喂给AI提示词。"></textarea>
+            <div class="row" style="margin-top:10px;">
+              <button class="btn small secondary" id="btnSaveNews">保存新闻摘要</button>
+              <button class="btn small danger" id="btnClearNews">清空</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <h2>板块动向（Proxy ETF / 分时慢扫）</h2>
+        <div class="row">
+          <button class="btn" id="btnScan">刷新板块动向（慢扫）</button>
+          <button class="btn secondary" id="btnStopScan">停止</button>
+          <button class="btn secondary" id="btnForceScan">强制重扫失败项</button>
+        </div>
+        <div class="small" id="scanStatus" style="margin-top:10px;">尚未开始扫描。</div>
+
+        <div style="margin-top:12px; overflow:auto;">
+          <table class="tbl" id="sectorTable">
+            <thead>
+              <tr>
+                <th style="width:28%;">板块</th>
+                <th style="width:10%;">市场</th>
+                <th style="width:12%;">Proxy</th>
+                <th style="width:12%;">趋势</th>
+                <th style="width:12%;">动量(20d)</th>
+                <th style="width:12%;">RSI</th>
+                <th style="width:14%;">状态</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <details style="margin-top:12px;">
+          <summary class="small">管理板块（添加/删除/隐藏默认/重置）</summary>
+          <div class="hr"></div>
+          <div class="two">
+            <div>
+              <div class="small">添加 Proxy 板块</div>
+              <div class="two">
+                <div>
+                  <select id="sectorMarket">
+                    <option value="US">美股/海外</option>
+                    <option value="CN_FUND">国内ETF/基金（6位）</option>
+                  </select>
+                </div>
+                <div>
+                  <input id="sectorTheme" placeholder="板块名/主题（如：贵金属/军工/半导体）" />
+                </div>
+              </div>
+              <div class="two" style="margin-top:10px;">
+                <div><input id="sectorSymbol" placeholder="Proxy代码：US填SPY/SMH；国内填512xxx/159xxx" /></div>
+                <div><input id="sectorName" placeholder="显示名（可空）" /></div>
+              </div>
+              <div class="row" style="margin-top:10px;">
+                <button class="btn small" id="btnAddSector">添加</button>
+                <button class="btn small secondary" id="btnExportSectors">导出</button>
+                <label class="btn small secondary" style="cursor:pointer;">
+                  导入<input type="file" id="sectorImportFile" accept="application/json" style="display:none;">
+                </label>
+                <button class="btn small danger" id="btnResetSectors">重置默认</button>
+              </div>
+              <div class="small" style="margin-top:8px;">说明：国内板块用“代表ETF/基金(6位)”作为 Proxy。后端会走 <span class="mono">/api/tech/cnfund</span> 计算趋势/动量/RSI。</div>
+            </div>
+
+            <div>
+              <div class="small">当前板块列表</div>
+              <div style="max-height:220px; overflow:auto; margin-top:10px; border:1px solid var(--line); border-radius:14px; background: rgba(7,7,10,.35);">
+                <table class="tbl" id="sectorManageTable" style="border:none; border-radius:0;">
+                  <thead>
+                    <tr>
+                      <th>板块</th>
+                      <th>市场</th>
+                      <th>Proxy</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="small" style="margin-top:8px;">提示：默认板块可“隐藏”；自定义板块可“删除”。</div>
+            </div>
+          </div>
         </details>
       </div>
-    </div>
-  </div>
 
-  <div class="card">
-    <h3>④ AI 决策（OpenAI-compatible 方式）</h3>
-    <div class="row">
-      <input id="aiBase" placeholder="AI BaseUrl，例如：https://api.openai.com/v1 或你的网关" />
-      <input id="aiKey" placeholder="API Key（仅保存在本机）" />
-      <input id="aiModel" placeholder="模型名，例如：gpt-5-mini / grok-3 / gemini-xxx" />
-    </div>
-    <div class="row" style="margin-top:10px;">
-      <button class="secondary" onclick="saveAI()">保存AI配置</button>
-      <button onclick="runAI()">🤖 今日动作 + 3-6个月板块建议（含技术/风控/新闻）</button>
-    </div>
-    <textarea id="aiOut" placeholder="AI 输出会在这里..."></textarea>
-    <div class="mut small">提示：AI Key 不写进代码；只存在你的浏览器本地存储中。</div>
-  </div>
+      <!-- Right: AI tools -->
+      <div class="card">
+        <h2>AI 分析控制台 <span class="tag info">默认必喂</span></h2>
 
-  <div class="card">
-    <h3>⑤ 风控检查（组合红黄灯）</h3>
-    <div class="row">
-      <button onclick="refreshRisk()">🛡 刷新风控检查</button>
-    </div>
+        <div class="small">分析模式</div>
+        <select id="taskMode">
+          <option value="opportunity_radar">机会雷达（板块）</option>
+          <option value="risk_check">风险体检</option>
+          <option value="weekly_review">持仓复盘</option>
+        </select>
 
-    <div class="split" style="margin-top:10px;">
-      <div class="col box">
-        <div class="mut small">风险等级</div>
-        <div id="riskLevel" style="font-size:22px;font-weight:800;margin-top:6px;">-</div>
+        <div class="hr"></div>
+
+        <div class="row">
+          <button class="btn" id="btnCompose">生成AI输入（复制到剪贴板）</button>
+          <button class="btn secondary" id="btnShowPayload">查看喂给AI的数据</button>
+        </div>
+
+        <div class="small" style="margin-top:10px;">
+          你可以在「Prompt」弹层里随时调整三层提示词；在「关键词」弹层里调整双轨制关键词库（自定义不会被覆盖）。
+        </div>
+
+        <div class="hr"></div>
+
+        <h2>风控校验（可喂/可关）</h2>
+        <div class="row">
+          <label class="tag"><input type="checkbox" id="feedRisk" checked style="margin-right:8px;">喂给AI（仅作校验）</label>
+          <label class="tag"><input type="checkbox" id="feedSectors" checked style="margin-right:8px;">喂板块动向</label>
+          <label class="tag"><input type="checkbox" id="feedTech" checked style="margin-right:8px;">喂技术指标</label>
+          <label class="tag"><input type="checkbox" id="feedNews" checked style="margin-right:8px;">喂新闻摘要</label>
+        </div>
+
+        <div class="hr"></div>
+
+        <h2>你的持仓（手动录入 / 后续可接入导入）</h2>
+        <div class="two">
+          <div>
+            <div class="small">类型</div>
+            <select id="posType">
+              <option value="CN_FUND">国内基金/ETF（6位）</option>
+              <option value="US_TICKER">美股Ticker（如SPY/QQQ）</option>
+            </select>
+          </div>
+          <div>
+            <div class="small">代码</div>
+            <input id="posCode" placeholder="如：012922 或 SPY" />
+          </div>
+        </div>
+        <div class="two" style="margin-top:10px;">
+          <div>
+            <div class="small">名称（可空）</div>
+            <input id="posName" placeholder="如：中欧医疗、SPY" />
+          </div>
+          <div>
+            <div class="small">权重（%）</div>
+            <input id="posWeight" placeholder="如：25" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn small" id="btnAddPos">添加持仓</button>
+          <button class="btn small secondary" id="btnExportPos">导出</button>
+          <label class="btn small secondary" style="cursor:pointer;">
+            导入<input type="file" id="posImportFile" accept="application/json" style="display:none;">
+          </label>
+          <button class="btn small danger" id="btnClearPos">清空</button>
+        </div>
+
+        <div style="margin-top:12px; overflow:auto;">
+          <table class="tbl" id="posTable">
+            <thead>
+              <tr>
+                <th>类型</th><th>代码</th><th>名称</th><th>权重%</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="hr"></div>
+        <div class="row">
+          <button class="btn secondary" id="btnFetchTech">拉取持仓技术指标</button>
+          <span class="small" id="techStatus">未拉取</span>
+        </div>
+        <div style="margin-top:12px; overflow:auto;">
+          <table class="tbl" id="techTable">
+            <thead>
+              <tr>
+                <th>代码</th><th>趋势</th><th>动量</th><th>RSI</th><th>备注</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
       </div>
-      <div class="col box">
-        <div class="mut small">建议总仓位</div>
-        <div id="riskSuggest" style="font-size:22px;font-weight:800;margin-top:6px;">-</div>
+    </div>
+  </div>
+
+  <!-- Floating buttons -->
+  <div class="floating">
+    <div class="fab" id="fabGuide" title="指南"><span>?</span></div>
+    <div class="fab" id="fabPrompt" title="Prompt"><span>⚙️</span></div>
+    <div class="fab" id="fabKeywords" title="关键词"><span>🔎</span></div>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-backdrop" id="modalGuide">
+    <div class="modal">
+      <header>
+        <div>
+          <h3>指南 // 标签解释（手机友好）</h3>
+          <p>这些标签不是“买卖指令”，而是“市场状态提示”。忙人最稳用法：用它决定<strong>追不追</strong>、<strong>分不分批</strong>、<strong>先观望</strong>。</p>
+        </div>
+        <div class="xbtn" data-close="modalGuide">✕</div>
+      </header>
+
+      <div class="tag info">趋势（上行/下行/震荡）</div>
+      <p class="muted">通常基于 SMA20 与 SMA60：SMA20 > SMA60 更偏强；反之偏弱。上行不等于必涨，只表示近期更强势。</p>
+      <ul class="muted">
+        <li><b>上行</b>：更适合“分批参与”，别一把梭。</li>
+        <li><b>下行</b>：更适合“少量试探/观望”，避免抄底冲动。</li>
+        <li><b>震荡</b>：方向不清，适合等明确趋势再做动作。</li>
+      </ul>
+
+      <div class="tag info">动量（20d涨跌幅）</div>
+      <p class="muted">近约一个月的涨跌幅。动量越高，短期追高风险越大；动量为负说明近期走弱。</p>
+
+      <div class="tag info">RSI（偏热/中性/偏冷）</div>
+      <p class="muted">RSI 是“涨得是不是太快”的温度计（0-100）：通常 >70 偏热，<30 偏冷。</p>
+      <ul class="muted">
+        <li><b>偏热</b>：不建议追涨一次性买入；更适合“观望/小仓分批”。</li>
+        <li><b>中性</b>：更适合“分批/定投”。</li>
+        <li><b>偏冷</b>：不是必买；更像“别恐慌卖，可开始关注”。</li>
+      </ul>
+
+      <div class="hr"></div>
+      <div class="tag warn">忙人动作建议（Now / Next7d / Avoid）</div>
+      <p class="muted">你不需要盯触发条件。系统默认让 AI 给你：现在做什么、这周留意什么、不要做什么。触发条件会放到“可选细节”。</p>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalPrompt">
+    <div class="modal">
+      <header>
+        <div>
+          <h3>Prompt 管理 // 三层提示词</h3>
+          <p>System 尽量少改；Analysis 常改；Task 按模式切换。支持保存/导入/导出。</p>
+        </div>
+        <div class="xbtn" data-close="modalPrompt">✕</div>
+      </header>
+
+      <div class="row">
+        <button class="btn small" id="btnPromptSave">保存</button>
+        <button class="btn small secondary" id="btnPromptExport">导出</button>
+        <label class="btn small secondary" style="cursor:pointer;">
+          导入<input type="file" id="promptImportFile" accept="application/json" style="display:none;">
+        </label>
+        <button class="btn small danger" id="btnPromptReset">恢复默认</button>
       </div>
-      <div class="col box">
-        <div class="mut small">主题集中度 Top1</div>
-        <div id="riskTheme" style="font-size:22px;font-weight:800;margin-top:6px;">-</div>
+
+      <div class="hr"></div>
+      <div class="small">System Prompt（固定规则）</div>
+      <textarea id="promptSystem"></textarea>
+
+      <div class="small" style="margin-top:12px;">Analysis Prompt（分析偏好）</div>
+      <textarea id="promptAnalysis"></textarea>
+
+      <div class="small" style="margin-top:12px;">Task Prompt（随模式切换）</div>
+      <textarea id="promptTask"></textarea>
+
+      <div class="small" style="margin-top:10px;">
+        小提示：你可以把语气调得更“果断”，但不建议写“肯定现在就买”。更稳的写法是：动作建议 + 置信度 + 风险点。
       </div>
-      <div class="col box">
-        <div class="mut small">后端时区</div>
-        <div id="riskTz" style="font-size:22px;font-weight:800;margin-top:6px;">-</div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalKeywords">
+    <div class="modal">
+      <header>
+        <div>
+          <h3>关键词库 // 双轨制（中英）</h3>
+          <p>默认库 + 自定义库并存。默认更新不会覆盖自定义。可一键生成可复制的搜索语句。</p>
+        </div>
+        <div class="xbtn" data-close="modalKeywords">✕</div>
+      </header>
+
+      <div class="row">
+        <button class="btn small" id="btnKwSave">保存</button>
+        <button class="btn small secondary" id="btnKwExport">导出</button>
+        <label class="btn small secondary" style="cursor:pointer;">
+          导入<input type="file" id="kwImportFile" accept="application/json" style="display:none;">
+        </label>
+        <button class="btn small danger" id="btnKwReset">恢复默认</button>
       </div>
-    </div>
 
-    <div class="list" id="riskIssues"></div>
-    <details style="margin-top:10px;">
-      <summary>主题分布（点击展开）</summary>
-      <div id="riskBreakdown" class="list"></div>
-    </details>
+      <div class="hr"></div>
+      <div class="two">
+        <div>
+          <div class="small">总新闻条数上限（喂给AI时）</div>
+          <input id="kwMaxItems" type="number" min="6" max="30"/>
+        </div>
+        <div>
+          <div class="small">外媒优先站点（逗号分隔，可改）</div>
+          <input id="kwSites" placeholder="reuters.com, ft.com, wsj.com, bloomberg.com" />
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="two">
+        <div>
+          <div class="small">默认关键词组（可禁用，不会被自定义覆盖）</div>
+          <div id="kwDefault"></div>
+        </div>
+        <div>
+          <div class="small">自定义关键词组（你自己加的）</div>
+          <div class="row" style="margin-bottom:10px;">
+            <button class="btn small" id="btnKwAddCustom">新增自定义组</button>
+          </div>
+          <div id="kwCustom"></div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="row">
+        <button class="btn" id="btnKwBuildQueries">生成可复制搜索语句</button>
+        <button class="btn secondary" id="btnKwOpenTop">打开外媒搜索（新标签页）</button>
+      </div>
+      <textarea id="kwQueries" class="mono" style="margin-top:10px; min-height:140px;" placeholder="点击上面的按钮生成..."></textarea>
+    </div>
   </div>
 
-  <div class="card">
-    <h3>⑥ 技术指标 / 趋势（每只持仓）</h3>
-    <div class="row">
-      <button onclick="refreshTech()">📊 刷新技术指标</button>
-      <button class="secondary" onclick="clearTechCache()">清空技术缓存</button>
-    </div>
-    <div class="mut small" style="margin-top:8px;">
-      国内基金：用东财历史净值序列计算；海外Ticker：用 stooq 历史日线（自动补 .us）。
-      注意：技术指标只是数学计算结果，不等于收益保证。
-    </div>
-    <div id="techList" class="list"></div>
-  </div>
-
-  <div class="card">
-    <h3>⑦ 板块动向（全板块：趋势 + 动量 + RSI，一眼看懂）</h3>
-    <div class="row">
-      <button onclick="refreshSectors()">🧭 刷新板块动向</button>
-      <button class="secondary" onclick="clearSectorCache()">清空板块缓存</button>
-      <input id="sectorSearch" placeholder="搜索板块/ETF，例如：黄金 / 医疗 / 半导体 / 印度..." oninput="renderSectors()" />
-    </div>
-    <div class="mut small" id="sectorStatus" style="margin-top:8px;"></div>
-    <div class="mut small" style="margin-top:8px;">
-      说明：这里不是预测，只是把代表性ETF的趋势/动量/RSI算出来，帮你快速发现“热/冷/上行/下行”。
-    </div>
-
-    <details open style="margin-top:10px;">
-      <summary>Top（建议你优先关注的板块）</summary>
-      <div id="sectorTop" class="list"></div>
-    </details>
-
-    <details style="margin-top:10px;">
-      <summary>全部板块列表（点击展开；里面可滚动）</summary>
-      <div id="sectorAll" class="scroll" style="margin-top:8px;"></div>
-    </details>
-  </div>
-
-</div>
-
-<!-- Modal -->
-<div id="mask" class="modalMask" onclick="closeModal(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <h4>编辑持仓</h4>
-    <div class="row">
-      <select id="mType">
-        <option value="CN_FUND">国内基金（6位）</option>
-        <option value="US_TICKER">海外标的（Ticker）</option>
-      </select>
-      <input id="mCode" placeholder="代码" />
-    </div>
-    <div class="row">
-      <input id="mAmount" type="number" placeholder="持有金额" />
-      <input id="mCost" type="number" placeholder="成本净值/成本价（可选）" />
-    </div>
-    <div class="mut small" id="mHint" style="margin-top:8px;"></div>
-    <div class="footer">
-      <button class="secondary" onclick="closeModal()">取消</button>
-      <button onclick="saveModal()">保存修改</button>
+  <div class="modal-backdrop" id="modalPayload">
+    <div class="modal">
+      <header>
+        <div>
+          <h3>喂给 AI 的数据（调试）</h3>
+          <p>这里是“默认必喂”的最终 payload 预览（JSON）。</p>
+        </div>
+        <div class="xbtn" data-close="modalPayload">✕</div>
+      </header>
+      <div class="row">
+        <button class="btn small secondary" id="btnCopyPayload">复制JSON</button>
+      </div>
+      <textarea id="payloadBox" class="mono" style="margin-top:10px; min-height:340px;"></textarea>
     </div>
   </div>
-</div>
 
 <script>
-  const LS = {
-    backend:"ic_backend",
-    pos:"ic_positions",
-    ai:"ic_ai",
-    newsKeywords:"ic_news_keywords",
-    newsPlan:"ic_news_plan",
-    newsCache:"ic_news_cache",
-    techCache:"ic_tech_cache",
-    riskCache:"ic_risk_cache",
-    sectorCache:"ic_sector_cache",
-  };
-  const $ = (id)=>document.getElementById(id);
+/* =========================
+   Storage helpers
+========================= */
+const LS = {
+  apiBase: "nq_api_base",
+  sectorsCustom: "nq_sectors_custom_v1",
+  sectorsHidden: "nq_sectors_hidden_v1",
+  sectorResults: "nq_sector_results_v1",
+  sectorFail: "nq_sector_fail_v1",
+  news: "nq_news_v1",
+  positions: "nq_positions_v1",
+  techCache: "nq_tech_cache_v1",
+  prompt: "nq_prompts_v1",
+  keywords: "nq_keywords_v1"
+};
 
-  // ✅ 你后端域名：已默认写死
-  const DEFAULT_BACKEND = "https://invest-copilot-backend.onrender.com";
-  // ✅ UI 本地缓存 TTL（6小时）
-  const UI_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const DEFAULT_API_BASE = "https://invest-copilot-backend.onrender.com";
 
-  // ---------- 标签推导（避免出现 undefined） ----------
-  function deriveTrend(obj){
-    const sma20 = obj?.sma20, sma60 = obj?.sma60, last = obj?.last;
-    if (typeof sma20 === "number" && typeof sma60 === "number") {
-      if (sma20 > sma60 * 1.001) return "上行";
-      if (sma20 < sma60 * 0.999) return "下行";
-      return "震荡";
+function nowMs(){ return Date.now(); }
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+function loadJson(key, fallback){
+  try{
+    const s = localStorage.getItem(key);
+    if(!s) return fallback;
+    return JSON.parse(s);
+  }catch{ return fallback; }
+}
+function saveJson(key, obj){
+  localStorage.setItem(key, JSON.stringify(obj));
+}
+
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+function fmtNum(x, d=2){
+  const n = Number(x);
+  if(!Number.isFinite(n)) return "—";
+  return n.toFixed(d);
+}
+function pct(x, d=1){
+  const n = Number(x);
+  if(!Number.isFinite(n)) return "—";
+  return (n>=0?"+":"") + n.toFixed(d) + "%";
+}
+function trendFrom(sma20, sma60){
+  if(!Number.isFinite(sma20) || !Number.isFinite(sma60)) return "—";
+  if(sma20 > sma60 * 1.002) return "上行";
+  if(sma20 < sma60 * 0.998) return "下行";
+  return "震荡";
+}
+function rsiTag(rsi){
+  const n = Number(rsi);
+  if(!Number.isFinite(n)) return "—";
+  if(n >= 70) return "偏热";
+  if(n <= 30) return "偏冷";
+  return "中性";
+}
+function marketTag(mkt){
+  if(mkt === "CN_FUND") return "国内";
+  return "US";
+}
+
+/* =========================
+   Default sectors (proxy ETFs)
+========================= */
+const DEFAULT_SECTORS = [
+  { id:"d1", market:"US", theme:"大盘", symbol:"SPY", name:"S&P 500" },
+  { id:"d2", market:"US", theme:"科技", symbol:"XLK", name:"Technology" },
+  { id:"d3", market:"US", theme:"半导体", symbol:"SMH", name:"Semiconductors" },
+  { id:"d4", market:"US", theme:"AI/成长", symbol:"QQQ", name:"Nasdaq 100" },
+  { id:"d5", market:"US", theme:"金融", symbol:"XLF", name:"Financials" },
+  { id:"d6", market:"US", theme:"能源", symbol:"XLE", name:"Energy" },
+  { id:"d7", market:"US", theme:"消费", symbol:"XLY", name:"Consumer Discretionary" },
+  { id:"d8", market:"US", theme:"医疗", symbol:"XLV", name:"Health Care" },
+  { id:"d9", market:"US", theme:"工业", symbol:"XLI", name:"Industrials" },
+  { id:"d10", market:"US", theme:"贵金属-黄金", symbol:"GLD", name:"Gold" },
+  { id:"d11", market:"US", theme:"贵金属-白银", symbol:"SLV", name:"Silver" },
+  { id:"d12", market:"US", theme:"新能源", symbol:"ICLN", name:"Clean Energy" },
+  { id:"d13", market:"US", theme:"太阳能", symbol:"TAN", name:"Solar" }
+];
+
+/* =========================
+   Default prompts
+========================= */
+const DEFAULT_PROMPTS = {
+  system: `你是投资组合分析助手。必须严格基于我提供的数据（持仓、技术指标、板块动向、新闻摘要、风控校验）进行推理，不得编造数据或引用不存在的来源。禁止使用“保证收益/肯定涨/现在必须买”等确定性承诺。输出必须包含：Now / Next7d / Avoid 三段动作建议，并说明每条建议引用了哪些输入信号（用简短数据点）。如果输入不足请明确说明缺口并给出最小补充建议。`,
+  analysis: `分析目标：给忙碌用户提供可执行、低维护成本的组合建议。优先考虑风险控制与分散，避免追高。允许给出“更进取/更保守”两套方案（各不超过3条）。尽量少用复杂触发条件；如需触发条件放到“可选细节”。`,
+  tasks: {
+    opportunity_radar: `任务：基于板块动向（Proxy ETF）+ 新闻摘要 + 技术指标，给出未来1-4周值得留意的3-6个板块。每个板块输出：一句理由 + 动作建议（观察/小仓试探/分批）+ 置信度（高/中/低）+ 主要风险点。`,
+    risk_check: `任务：做一次组合风险体检。用技术指标、板块动向、新闻摘要判断未来1-4周主要风险。对照riskEngine仅作校验，指出一致/不一致原因。`,
+    weekly_review: `任务：做本周复盘：哪些仓位贡献风险/收益，是否需要调仓（给区间，不给精确点位）。强调低维护与可执行性。`
+  }
+};
+
+/* =========================
+   Default keyword library (dual track)
+========================= */
+const DEFAULT_KW = {
+  settings: {
+    mode: "dual_track",
+    totalMaxItems: 15,
+    sites: ["reuters.com","ft.com","wsj.com","bloomberg.com","sec.gov","prnewswire.com","businesswire.com"]
+  },
+  defaultGroups: [
+    { id:"macro", name:"宏观/利率/汇率", enabled:true, weight:5, maxItems:3,
+      zh:["美联储 利率 点阵图","美元指数 走强","中国 降准 降息","人民币 汇率 波动"],
+      en:["Fed rates hold dot plot","US dollar index strength","PBOC RRR cut rate cut","USD/CNY moves"]
+    },
+    { id:"china_internet", name:"中国互联网/港股科技", enabled:true, weight:5, maxItems:3,
+      zh:["港股科技 监管","平台经济 政策","恒生科技 资金流"],
+      en:["China internet platforms regulation update","Hang Seng Tech Index rally drivers","Tencent Alibaba Meituan news"]
+    },
+    { id:"ai", name:"AI/算力/半导体", enabled:true, weight:5, maxItems:3,
+      zh:["英伟达 财报 指引","算力 订单 服务器","半导体 产业链 景气"],
+      en:["Nvidia earnings guidance AI demand","AI server orders datacenter capex","semiconductor cycle outlook"]
+    },
+    { id:"commod", name:"贵金属/大宗", enabled:true, weight:4, maxItems:2,
+      zh:["黄金 价格 走强","白银 波动","美债收益率 金价"],
+      en:["gold prices rise yields","silver volatility","real yields and gold"]
     }
-    // 兜底：用 last vs sma20
-    if (typeof last === "number" && typeof sma20 === "number") {
-      if (last > sma20 * 1.002) return "上行";
-      if (last < sma20 * 0.998) return "下行";
-      return "震荡";
+  ],
+  customGroups: []
+};
+
+/* =========================
+   DOM refs
+========================= */
+const $ = (id)=>document.getElementById(id);
+
+const apiBaseEl = $("apiBase");
+const backendText = $("backendText");
+const healthText = $("healthText");
+const healthDot = $("healthDot");
+
+const sectorTableBody = $("sectorTable").querySelector("tbody");
+const sectorManageBody = $("sectorManageTable").querySelector("tbody");
+const scanStatus = $("scanStatus");
+
+const modalGuide = $("modalGuide");
+const modalPrompt = $("modalPrompt");
+const modalKeywords = $("modalKeywords");
+const modalPayload = $("modalPayload");
+
+const payloadBox = $("payloadBox");
+
+let API_BASE = DEFAULT_API_BASE;
+
+/* =========================
+   Modal helpers
+========================= */
+function openModal(id){ $(id).style.display = "flex"; }
+function closeModal(id){ $(id).style.display = "none"; }
+document.addEventListener("click", (e)=>{
+  const closeId = e.target?.getAttribute?.("data-close");
+  if(closeId) closeModal(closeId);
+  if(e.target.classList.contains("modal-backdrop")) e.target.style.display="none";
+});
+
+/* =========================
+   Init API base
+========================= */
+function initApiBase(){
+  const saved = localStorage.getItem(LS.apiBase);
+  API_BASE = (saved || DEFAULT_API_BASE).trim().replace(/\/+$/,"");
+  apiBaseEl.value = API_BASE;
+  backendText.textContent = API_BASE || "(未设置)";
+}
+apiBaseEl.addEventListener("change", ()=>{
+  API_BASE = apiBaseEl.value.trim().replace(/\/+$/,"");
+  localStorage.setItem(LS.apiBase, API_BASE);
+  backendText.textContent = API_BASE || "(未设置)";
+});
+
+/* =========================
+   Health check
+========================= */
+async function checkHealth(){
+  if(!API_BASE){ healthText.textContent="未设置后端"; healthDot.className="baddot"; return; }
+  try{
+    const r = await fetch(API_BASE + "/health", { cache:"no-store" });
+    const j = await r.json();
+    if(j?.ok){
+      healthText.textContent = "OK " + (j.build || "");
+      healthDot.className="okdot";
+    }else{
+      healthText.textContent = "异常";
+      healthDot.className="baddot";
     }
-    return null;
+  }catch(e){
+    healthText.textContent = "无法连接";
+    healthDot.className="baddot";
   }
-  function deriveRsiTag(obj){
-    const rsi = obj?.rsi14;
-    if (typeof rsi !== "number") return null;
-    if (rsi >= 70) return "RSI偏热";
-    if (rsi <= 30) return "RSI偏冷";
-    return "RSI中性";
-  }
-  function tagHtml(text, cls){
-    if (!text) return "";
-    return `<span class="tag ${cls}">${text}</span>`;
-  }
+}
 
+/* =========================
+   Clear local cache
+========================= */
+$("btnClearLocal").addEventListener("click", ()=>{
+  const keys = Object.values(LS);
+  for(const k of keys) localStorage.removeItem(k);
+  location.reload();
+});
 
-  // ✅ 板块列表：你要加“煤炭/军工/AI/机器人/中国互联网/印度”等，直接往这里加
-  // 你说你自己会填 ETF symbol，我就给你结构，别让我去搜 ticker。
-  const SECTOR_ETFS = [
-    { theme:"全球成长&美股", symbol:"QQQ", name:"纳指100" },
-    { theme:"全球成长&美股", symbol:"SPY", name:"标普500" },
-    { theme:"科技", symbol:"XLK", name:"美股科技" },
-    { theme:"半导体", symbol:"SMH", name:"半导体" },
-    { theme:"金融/银行", symbol:"XLF", name:"金融" },
-    { theme:"医疗", symbol:"XLV", name:"医疗" },
-    { theme:"能源/石油", symbol:"XLE", name:"能源" },
-    { theme:"工业", symbol:"XLI", name:"工业" },
-    { theme:"公用事业", symbol:"XLU", name:"公用事业" },
-    { theme:"材料", symbol:"XLB", name:"材料" },
-    { theme:"消费(可选)", symbol:"XLY", name:"可选消费" },
-    { theme:"消费(必选)", symbol:"XLP", name:"必选消费" },
-    { theme:"地产", symbol:"XLRE", name:"房地产" },
-    { theme:"黄金", symbol:"GLD", name:"黄金" },
-    { theme:"白银", symbol:"SLV", name:"白银" },
-    { theme:"金矿", symbol:"GDX", name:"金矿" },
-    { theme:"新能源(美股)", symbol:"ICLN", name:"清洁能源" },
-    { theme:"光伏(美股)", symbol:"TAN", name:"光伏" },
+/* =========================
+   News box
+========================= */
+function initNews(){
+  $("newsBox").value = localStorage.getItem(LS.news) || "";
+}
+$("btnSaveNews").addEventListener("click", ()=>{
+  localStorage.setItem(LS.news, $("newsBox").value || "");
+  alert("已保存新闻摘要");
+});
+$("btnClearNews").addEventListener("click", ()=>{
+  $("newsBox").value = "";
+  localStorage.removeItem(LS.news);
+});
 
-    // 👇 你想要的：煤炭/军工/AI/机器人/中国互联网/印度
-    // 你自己填 symbol 即可（我先放占位）
-    { theme:"军工", symbol:"ITA", name:"航空航天/军工（示例）" },
-    { theme:"航天/卫星", symbol:"UFO", name:"航天/卫星（示例）" },
-    // { theme:"煤炭", symbol:"XXXX", name:"煤炭" },
-    // { theme:"AI", symbol:"XXXX", name:"AI" },
-    // { theme:"机器人", symbol:"XXXX", name:"机器人" },
-    // { theme:"中国互联网", symbol:"XXXX", name:"中国互联网" },
-    // { theme:"印度", symbol:"XXXX", name:"印度" },
+/* =========================
+   Sectors: load/merge/default+custom-hidden
+========================= */
+function getSectors(){
+  const custom = loadJson(LS.sectorsCustom, []);
+  const hidden = new Set(loadJson(LS.sectorsHidden, []));
+  const defaults = DEFAULT_SECTORS.filter(s => !hidden.has(s.id));
+  // assign stable ids for custom
+  const merged = [...defaults, ...custom];
+  return { merged, custom, hidden };
+}
+function saveCustomSectors(custom){ saveJson(LS.sectorsCustom, custom); }
+function saveHiddenDefaults(hiddenIds){ saveJson(LS.sectorsHidden, hiddenIds); }
 
-    { theme:"新兴市场", symbol:"EEM", name:"新兴市场" },
-    { theme:"越南", symbol:"VNM", name:"越南" },
-  ];
-
-  let editingIndex = -1;
-  let sectorData = null;
-
-  function load() {
-    const b = localStorage.getItem(LS.backend) || DEFAULT_BACKEND;
-    $("backend").value = b;
-    localStorage.setItem(LS.backend, b);
-
-    window.positions = JSON.parse(localStorage.getItem(LS.pos) || "[]");
-
-    const ai = JSON.parse(localStorage.getItem(LS.ai) || "{}");
-    $("aiBase").value = ai.baseUrl || "";
-    $("aiKey").value  = ai.apiKey || "";
-    $("aiModel").value= ai.model || "";
-
-    const kw = localStorage.getItem(LS.newsKeywords) || "";
-    if (kw) $("newsKeywords").value = kw;
-
-    const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
-    if (plan) renderThemes(plan.themes || []);
-    const cache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
-    if (cache) renderNews(cache.items || []);
-
-    const risk = JSON.parse(localStorage.getItem(LS.riskCache) || "null");
-    if (risk) renderRisk(risk);
-
-    const tech = JSON.parse(localStorage.getItem(LS.techCache) || "null");
-    if (tech) renderTech(tech);
-
-    const sec = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
-    if (sec) { sectorData = sec; renderSectors(); }
-
-    render();
-  }
-
-  function persist(){ localStorage.setItem(LS.pos, JSON.stringify(window.positions)); }
-
-  function saveBackend(){
-    localStorage.setItem(LS.backend, $("backend").value.trim());
-    $("pingResult").textContent = "已保存。";
-  }
-
-  async function ping(){
-    const base = $("backend").value.trim();
-    if(!base) return alert("先填写后端地址");
-    try{
-      const r = await fetch(base.replace(/\/+$/,"") + "/health");
-      const j = await r.json();
-      $("pingResult").textContent = j.ok ? "✅ 后端服务正常" : "⚠️ 后端异常";
-    }catch(e){
-      $("pingResult").textContent = "❌ 连接失败：" + e.message;
-    }
-  }
-
-  function add(){
-    const type = $("type").value;
-    const code = $("code").value.trim();
-    const amount = Number($("amount").value);
-    const cost = $("cost").value ? Number($("cost").value) : null;
-    if(!code || !amount) return alert("请填代码 + 金额");
-
-    window.positions.push({
-      type, code, amount, cost,
-      name:"",
-      price:null, mv:null, pnl:null, pnlPct:null,
-      _nav:null, _navDate:null, _estNav:null, _estPct:null, _time:null
-    });
-    persist(); render();
-  }
-
-  function clearAll(){
-    if(!confirm("确定清空所有持仓？")) return;
-    window.positions = [];
-    persist(); render();
-  }
-
-  function openEdit(i){
-    editingIndex = i;
-    const p = window.positions[i];
-    $("mType").value = p.type;
-    $("mCode").value = p.code;
-    $("mAmount").value = p.amount ?? "";
-    $("mCost").value = p.cost ?? "";
-    $("mHint").textContent = `当前名称：${p.name || "未拉取"}｜当前现价：${p.price ?? "未拉取"}｜盈亏率：${p.pnlPct!=null ? p.pnlPct.toFixed(2)+"%" : "未计算"}`;
-    $("mask").style.display = "flex";
-  }
-
-  function closeModal(e){
-    if (e && e.target && e.target.id !== "mask") return;
-    $("mask").style.display = "none";
-    editingIndex = -1;
-  }
-
-  function saveModal(){
-    if (editingIndex < 0) return;
-    const p = window.positions[editingIndex];
-
-    const type = $("mType").value;
-    const code = $("mCode").value.trim();
-    const amount = Number($("mAmount").value);
-    const cost = $("mCost").value ? Number($("mCost").value) : null;
-    if(!code || !amount) return alert("请填代码 + 金额");
-
-    p.type = type;
-    p.code = code;
-    p.amount = amount;
-    p.cost = cost;
-
-    p.name = "";
-    p.price = p.mv = p.pnl = p.pnlPct = null;
-    p._nav = p._navDate = p._estNav = p._estPct = p._time = null;
-
-    persist(); render();
-    closeModal();
-  }
-
-  function deleteOne(i){
-    const p = window.positions[i];
-    if(!confirm(`确定删除：${p.code} ${p.name || ""} ?`)) return;
-    window.positions.splice(i,1);
-    persist(); render();
-  }
-
-  function render(){
-    const tb = $("tb"); tb.innerHTML = "";
-    const totalAmount = window.positions.reduce((s,p)=>s + (p.amount||0), 0);
-    const totalMV = window.positions.reduce((s,p)=>s + (p.mv||0), 0);
-    const totalPNL = window.positions.reduce((s,p)=>s + (p.pnl||0), 0);
-
-    window.positions.forEach((p,i)=>{
-      const tr = document.createElement("tr");
-      const pnlCls = (p.pnlPct ?? 0) >= 0 ? "ok" : "bad";
-      const w = totalMV ? (p.mv||0)/totalMV*100 : 0;
-
-      const priceCell = (p.type === "CN_FUND")
-        ? `
-          ${p.price ?? "-"}
-          <div class="mut small" style="margin-top:2px;">
-            净值: ${(typeof p._nav === "number" ? p._nav : "-")}（${p._navDate || "-"}）
-            <br/>
-            估值: ${(typeof p._estNav === "number" ? p._estNav : "-")}（${(typeof p._estPct === "number" ? p._estPct : "-")}%）${p._time ? " " + p._time : ""}
-          </div>
-        `
-        : `${p.price ?? "-"}`;
-
-      tr.innerHTML = `
-        <td><span class="pill">${p.type}</span></td>
-        <td>${p.code}</td>
-        <td class="mut">${p.name || "-"}</td>
-        <td>${priceCell}</td>
-        <td>${p.mv!=null ? p.mv.toFixed(2) : "-"}</td>
-        <td class="${pnlCls}">${p.pnl!=null ? p.pnl.toFixed(2) : "-"}</td>
-        <td class="${pnlCls}">${p.pnlPct!=null ? p.pnlPct.toFixed(2)+"%" : "-"}</td>
-        <td>${(w||0).toFixed(1)}%</td>
-        <td>
-          <button class="secondary" onclick="openEdit(${i})">编辑</button>
-          <button class="danger" onclick="deleteOne(${i})">删除</button>
-        </td>
-      `;
-      tb.appendChild(tr);
-    });
-
-    $("sum").textContent =
-      `投入合计：${totalAmount.toFixed(2)} ｜ 市值合计：${totalMV.toFixed(2)} ｜ 总盈亏：${totalPNL.toFixed(2)}`;
-  }
-
-  async function refreshAll(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-    const api = base.replace(/\/+$/,"");
-
-    // 国内基金
-    for (const p of window.positions){
-      if (p.type === "CN_FUND"){
-        const r = await fetch(`${api}/api/cn/fund/${encodeURIComponent(p.code)}`);
-        const j = await r.json();
-        p.name = j.name || p.name;
-        p.price = (typeof j.nav === "number" && j.nav > 0) ? j.nav : j.estNav;
-        p._nav = (typeof j.nav === "number") ? j.nav : null;
-        p._navDate = j.navDate || null;
-        p._estNav = (typeof j.estNav === "number") ? j.estNav : null;
-        p._estPct = (typeof j.estPct === "number") ? j.estPct : null;
-        p._time = j.time || null;
-      }
-    }
-
-    // 海外：批量拉
-    const gl = window.positions.filter(p=>p.type==="US_TICKER");
-    if (gl.length){
-      const symbols = gl.map(p=>p.code).join(",");
-      const r = await fetch(`${api}/api/gl/quote?symbols=${encodeURIComponent(symbols)}`);
-      const j = await r.json();
-      const map = new Map((j.quotes||[]).map(q=>[q.symbol, q]));
-      for (const p of gl){
-        const q = map.get(p.code.toUpperCase());
-        if(q){
-          p.name = q.name || p.name;
-          p.price = q.price;
+function renderSectorsManage(){
+  const { merged, custom, hidden } = getSectors();
+  sectorManageBody.innerHTML = "";
+  for(const s of merged){
+    const tr = document.createElement("tr");
+    const isDefault = s.id && String(s.id).startsWith("d");
+    tr.innerHTML = `
+      <td>${escapeHtml(s.theme || "未分类")}</td>
+      <td><span class="tag ${s.market==="CN_FUND"?"warn":"info"}">${marketTag(s.market)}</span></td>
+      <td class="mono">${escapeHtml(s.symbol)}</td>
+      <td>
+        ${isDefault
+          ? `<button class="btn small secondary" data-hide="${s.id}">隐藏</button>`
+          : `<button class="btn small danger" data-del="${escapeAttr(s.id)}">删除</button>`
         }
-      }
-    }
-
-    // 计算市值/盈亏
-    for (const p of window.positions){
-      if (typeof p.price === "number" && p.price > 0){
-        const baseCost = (typeof p.cost === "number" && p.cost > 0) ? p.cost : p.price;
-        const shares = p.amount / baseCost;
-        p.mv = shares * p.price;
-        p.pnl = p.mv - p.amount;
-        p.pnlPct = (p.pnl / p.amount) * 100;
-      } else {
-        p.mv = p.pnl = p.pnlPct = null;
-      }
-    }
-
-    persist(); render();
+      </td>
+    `;
+    sectorManageBody.appendChild(tr);
   }
-
-  // ---------- NEWS ----------
-  function renderThemes(themes){
-    $("themes").textContent = themes && themes.length ? themes.join(" / ") : "（尚未生成）";
-  }
-
-  async function buildNewsPlan(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-    const api = base.replace(/\/+$/,"");
-
-    const payload = window.positions.map(p=>({
-      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
-    }));
-
-    const r = await fetch(`${api}/api/news/plan`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload })
+  // handlers
+  sectorManageBody.querySelectorAll("[data-hide]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.getAttribute("data-hide");
+      const hiddenIds = loadJson(LS.sectorsHidden, []);
+      if(!hiddenIds.includes(id)) hiddenIds.push(id);
+      saveHiddenDefaults(hiddenIds);
+      renderSectorsManage();
+      renderSectorTable(); // reflect
     });
-    const j = await r.json();
-    if (!j.ok) return alert("生成关键词失败：" + (j.error || ""));
-
-    localStorage.setItem(LS.newsPlan, JSON.stringify(j));
-    renderThemes(j.themes || []);
-
-    const kw = (j.keywords || []).join(",");
-    $("newsKeywords").value = kw;
-    localStorage.setItem(LS.newsKeywords, kw);
-    alert("✅ 已生成自动关键词（可手动修改后再抓新闻）");
-  }
-
-  function saveNewsKeywords(){
-    const kw = $("newsKeywords").value.trim();
-    localStorage.setItem(LS.newsKeywords, kw);
-    alert("✅ 关键词已保存");
-  }
-
-  function resetNewsKeywords(){
-    const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
-    if (!plan) return alert("先点“自动生成关键词”");
-    const kw = (plan.keywords || []).join(",");
-    $("newsKeywords").value = kw;
-    localStorage.setItem(LS.newsKeywords, kw);
-  }
-
-  function renderNews(items){
-    const box = $("newsList");
-    box.innerHTML = "";
-    if (!items || !items.length) {
-      box.innerHTML = `<div class="mut small">暂无新闻。先生成关键词，再抓取新闻。</div>`;
-      return;
-    }
-    for (const it of items) {
-      const div = document.createElement("div");
-      div.className = "li";
-      const sentiCls = it.sentiment==="bullish" ? "tagBull" : it.sentiment==="bearish" ? "tagBear" : "tagNeu";
-      const themeTags = (it.themes||[]).slice(0,3).map(t=>`<span class="tag tagTheme">${t}</span>`).join("");
-      div.innerHTML = `
-        <div class="small">
-          <span class="tag ${sentiCls}">${it.sentiment||"neutral"}</span>
-          ${themeTags}
-          <span class="tag mono">score:${it.score ?? "-"}</span>
-          <span class="mut">${it.pubDate || ""}</span>
-        </div>
-        <div style="margin-top:6px;"><a href="${it.link}" target="_blank" rel="noreferrer">${it.title}</a></div>
-        <div class="mut small" style="margin-top:6px;">${(it.description || "").slice(0, 180)}</div>
-        <div class="mut small" style="margin-top:6px;">关键词：${it.keyword||"-"}</div>
-      `;
-      box.appendChild(div);
-    }
-  }
-
-  async function fetchNews(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-    const api = base.replace(/\/+$/,"");
-
-    const kw = (localStorage.getItem(LS.newsKeywords) || $("newsKeywords").value || "").trim();
-    if (!kw) return alert("先生成或填写关键词");
-
-    $("newsList").innerHTML = `<div class="mut small">抓取中…</div>`;
-
-    const plan = JSON.parse(localStorage.getItem(LS.newsPlan) || "null");
-    const weights = plan && plan.weights ? JSON.stringify(plan.weights) : "";
-    const url = `${api}/api/news/rss?keywords=${encodeURIComponent(kw)}&limit=18&minScore=2${weights?`&weights=${encodeURIComponent(weights)}`:""}`;
-
-    const r = await fetch(url);
-    const j = await r.json();
-    if (!j.ok) return alert("抓取新闻失败：" + (j.error || ""));
-
-    localStorage.setItem(LS.newsCache, JSON.stringify(j));
-    renderNews(j.items || []);
-  }
-
-  // ---------- RISK ----------
-  async function refreshRisk(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-    const api = base.replace(/\/+$/,"");
-
-    const payload = window.positions.map(p=>({
-      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
-    }));
-    const r = await fetch(`${api}/api/risk/check`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload })
+  });
+  sectorManageBody.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.getAttribute("data-del");
+      const customNow = loadJson(LS.sectorsCustom, []);
+      saveCustomSectors(customNow.filter(x=>String(x.id)!==String(id)));
+      renderSectorsManage();
+      renderSectorTable();
     });
-    const j = await r.json();
-    if (!j.ok) return alert("风控检查失败：" + (j.error||""));
+  });
+}
 
-    localStorage.setItem(LS.riskCache, JSON.stringify(j));
-    renderRisk(j);
+function uuid(){
+  return "c_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+}
+
+$("btnAddSector").addEventListener("click", ()=>{
+  const market = $("sectorMarket").value;
+  const theme = $("sectorTheme").value.trim();
+  const symbol = $("sectorSymbol").value.trim().toUpperCase();
+  const name = $("sectorName").value.trim();
+  if(!theme || !symbol){
+    alert("请填写：板块名 + Proxy代码");
+    return;
   }
-
-  function renderRisk(j){
-    $("riskLevel").textContent = j.riskLevel || "-";
-    $("riskSuggest").textContent = (j.suggestTotalPct!=null ? j.suggestTotalPct+"%" : "-");
-    $("riskTheme").textContent = (j.topTheme?.theme ? `${j.topTheme.theme} ${j.topTheme.pct}%` : "-");
-    $("riskTz").textContent = j.tz || "-";
-
-    const issues = $("riskIssues");
-    issues.innerHTML = "";
-    (j.issues||[]).forEach(x=>{
-      const div = document.createElement("div");
-      div.className = "li";
-      const lvl = x.level==="高" ? "tagBear" : x.level==="中" ? "tagNeu" : "tagBull";
-      div.innerHTML = `<span class="tag ${lvl}">风控 ${x.level}</span> <span class="small">${x.text}</span>`;
-      issues.appendChild(div);
-    });
-
-    const bk = $("riskBreakdown");
-    bk.innerHTML = "";
-    (j.themeBreakdown||[]).forEach(x=>{
-      const div = document.createElement("div");
-      div.className = "li";
-      div.innerHTML = `<span class="tag tagTheme">${x.theme}</span> <span class="small">占比 ${x.pct}%</span>`;
-      bk.appendChild(div);
-    });
+  if(market === "CN_FUND" && !/^\d{6}$/.test(symbol)){
+    alert("国内ETF/基金请填写 6 位数字代码（例如 512480）");
+    return;
   }
+  const custom = loadJson(LS.sectorsCustom, []);
+  custom.push({ id: uuid(), market, theme, symbol, name: name||null });
+  saveCustomSectors(custom);
+  $("sectorTheme").value=""; $("sectorSymbol").value=""; $("sectorName").value="";
+  renderSectorsManage();
+  renderSectorTable();
+});
 
-  // ---------- TECH ----------
-  function clearTechCache(){
-    localStorage.removeItem(LS.techCache);
-    $("techList").innerHTML = `<div class="mut small">已清空技术缓存。</div>`;
+$("btnResetSectors").addEventListener("click", ()=>{
+  if(!confirm("确定重置默认？会恢复所有默认板块，并清空自定义。")) return;
+  saveCustomSectors([]);
+  saveHiddenDefaults([]);
+  localStorage.removeItem(LS.sectorResults);
+  localStorage.removeItem(LS.sectorFail);
+  renderSectorsManage();
+  renderSectorTable();
+});
+
+$("btnExportSectors").addEventListener("click", ()=>{
+  const custom = loadJson(LS.sectorsCustom, []);
+  const hidden = loadJson(LS.sectorsHidden, []);
+  const blob = new Blob([JSON.stringify({ custom, hidden }, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "neon_sectors.json";
+  a.click();
+});
+
+$("sectorImportFile").addEventListener("change", async (e)=>{
+  const file = e.target.files?.[0];
+  if(!file) return;
+  try{
+    const txt = await file.text();
+    const j = JSON.parse(txt);
+    if(Array.isArray(j.custom)) saveCustomSectors(j.custom);
+    if(Array.isArray(j.hidden)) saveHiddenDefaults(j.hidden);
+    alert("导入成功");
+    renderSectorsManage();
+    renderSectorTable();
+  }catch(err){
+    alert("导入失败：" + String(err));
+  }finally{
+    e.target.value="";
   }
+});
 
-  function clearSectorCache(){
-    localStorage.removeItem(LS.sectorCache);
-    sectorData = null;
-    $("sectorStatus").textContent = "已清空板块缓存。";
-    $("sectorTop").innerHTML = "";
-    $("sectorAll").innerHTML = "";
+/* =========================
+   Sector results cache
+========================= */
+function loadSectorResults(){
+  return loadJson(LS.sectorResults, { ts:0, map:{} });
+}
+function saveSectorResults(obj){
+  saveJson(LS.sectorResults, obj);
+}
+function loadSectorFailSet(){
+  const arr = loadJson(LS.sectorFail, []);
+  return new Set(arr);
+}
+function saveSectorFailSet(set){
+  saveJson(LS.sectorFail, Array.from(set));
+}
+
+/* =========================
+   Render sector table
+========================= */
+function renderSectorTable(){
+  const { merged } = getSectors();
+  const cache = loadSectorResults();
+  sectorTableBody.innerHTML = "";
+  for(const s of merged){
+    const key = sectorKey(s);
+    const r = cache.map?.[key] || null;
+    const ok = r?.ok === true;
+    const t = ok ? trendFrom(r.sma20, r.sma60) : "—";
+    const status = ok ? `<span class="tag good">OK</span>` : `<span class="tag bad">暂无数据</span>`;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(s.theme)} <span class="small muted">· ${escapeHtml(s.name || "")}</span></td>
+      <td><span class="tag ${s.market==="CN_FUND"?"warn":"info"}">${marketTag(s.market)}</span></td>
+      <td class="mono">${escapeHtml(s.symbol)}</td>
+      <td>${labelTrend(t)}</td>
+      <td>${labelRet(r?.ret20)}</td>
+      <td>${labelRsi(r?.rsi14)}</td>
+      <td>${status}<div class="small muted">${escapeHtml(r?.reason || "")}</div></td>
+    `;
+    sectorTableBody.appendChild(tr);
   }
+}
+function labelTrend(t){
+  if(t==="上行") return `<span class="tag good">上行</span>`;
+  if(t==="下行") return `<span class="tag bad">下行</span>`;
+  if(t==="震荡") return `<span class="tag warn">震荡</span>`;
+  return "—";
+}
+function labelRet(v){
+  if(!Number.isFinite(Number(v))) return "—";
+  const n = Number(v);
+  if(n>=6) return `<span class="tag good">${pct(n)}</span>`;
+  if(n>=2) return `<span class="tag info">${pct(n)}</span>`;
+  if(n<=-4) return `<span class="tag bad">${pct(n)}</span>`;
+  return `<span class="tag warn">${pct(n)}</span>`;
+}
+function labelRsi(v){
+  if(!Number.isFinite(Number(v))) return "—";
+  const n = Number(v);
+  const tag = rsiTag(n);
+  if(tag==="偏热") return `<span class="tag warn">${fmtNum(n,0)} 偏热</span>`;
+  if(tag==="偏冷") return `<span class="tag warn">${fmtNum(n,0)} 偏冷</span>`;
+  return `<span class="tag info">${fmtNum(n,0)} 中性</span>`;
+}
+function sectorKey(s){
+  return `${s.market||"US"}:${s.symbol}`;
+}
 
-  async function refreshTech(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-    const api = base.replace(/\/+$/,"");
+/* =========================
+   Paced scanning (1 item / 15s)
+========================= */
+let scanAbort = null;
 
-    const payload = window.positions.map(p=>({
-      type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv
-    }));
-
-    $("techList").innerHTML = `<div class="mut small">计算中…（首次可能稍慢）</div>`;
-
-    const r = await fetch(`${api}/api/tech/batch`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload })
-    });
-    const j = await r.json();
-    if (!j.ok) return alert("技术指标失败：" + (j.error||""));
-
-    localStorage.setItem(LS.techCache, JSON.stringify(j));
-    renderTech(j);
-  }
-
-  function renderTech(j){
-    const box = $("techList");
-    box.innerHTML = "";
-    const items = j.items || [];
-    if (!items.length) {
-      box.innerHTML = `<div class="mut small">暂无技术指标数据。</div>`;
-      return;
-    }
-
-    for (const it of items) {
-      const div = document.createElement("div");
-      div.className = "li";
-
-      if (!it.ok) {
-        div.innerHTML = `
-          <div><b>${it.code || it.symbol || "-"}</b> <span class="mut">${it.name || ""}</span> <span class="pill">${it.type||""}</span></div>
-          <div class="mut small">暂无数据（${it.reason || "unknown"}，count=${it.count ?? 0}）</div>
-        `;
-        box.appendChild(div);
-        continue;
-      }
-      const trend = it.trend || deriveTrend(it);
-      const rsiTag = it.rsiTag || deriveRsiTag(it);
-
-      const trendCls = trend==="上行" ? "tagBull" : trend==="下行" ? "tagBear" : "tagNeu";
-      const rsiCls   = rsiTag==="RSI偏热" ? "tagBear" : rsiTag==="RSI偏冷" ? "tagBull" : "tagNeu";
-
-      div.innerHTML = `
-        <div>
-          <b>${it.code || it.symbol}</b>
-          <span class="mut">${it.name || ""}</span>
-          <span class="pill">${it.type || ""}</span>
-          ${tagHtml(trend, trendCls)}
-          ${tagHtml(rsiTag, rsiCls)}
-        </div>
-        <div class="mut small mono" style="margin-top:6px;">
-          last=${fmt(it.last)} |
-          SMA20=${fmt(it.sma20)} |
-          SMA60=${fmt(it.sma60)} |
-          RSI14=${fmt(it.rsi14)} |
-          MACD=${fmt(it.macd)} |
-          Hist=${fmt(it.hist)} |
-          ret20=${fmt(it.ret20)}%
-        </div>
-      `;
-      box.appendChild(div);
-    }
-  }
-
-  function fmt(x){
-    if (typeof x !== "number") return "-";
-    return (Math.abs(x) >= 10 ? x.toFixed(2) : x.toFixed(4));
-  }
-
-// ---------- HTTP helper (带超时，避免一直 pending) ----------
-async function fetchJsonTimeout(url, opts={}, timeoutMs=90000){
+async function postJson(url, body, {timeoutMs=30000, signal=null}={}){
   const ctrl = new AbortController();
   const t = setTimeout(()=>ctrl.abort(), timeoutMs);
-
-  // 如果外部也传了 signal（用于“停止扫描”），就联动中止
-  const ext = opts && opts.signal;
-  let extAbortHandler = null;
-  if (ext) {
-    extAbortHandler = () => ctrl.abort();
-    try { ext.addEventListener("abort", extAbortHandler, { once:true }); } catch {}
-  }
-
+  const mergedSignal = mergeSignals(signal, ctrl.signal);
   try{
-    const r = await fetch(url, { ...opts, signal: ctrl.signal });
-    const text = await r.text();
-    let j = null;
-    try{ j = JSON.parse(text); }catch{ j = { ok:false, error:"non-json", head: text.slice(0,200) }; }
-    if (!r.ok && j && j.ok !== false) j = { ok:false, error:`HTTP ${r.status}`, detail:j };
-    return j;
-  }catch(e){
-    throw new Error(e && e.name==="AbortError" ? `请求超时/已中止（>${Math.round(timeoutMs/1000)}s）` : String(e));
-  }finally{
-    clearTimeout(t);
-    if (ext && extAbortHandler) {
-      try { ext.removeEventListener("abort", extAbortHandler); } catch {}
-    }
-  }
-}
-
-  // ---------- SECTOR ----------
-  // ---------- SECTOR（分批扫描：每批 5 个，每 70 秒继续，避免 AlphaVantage 免费限流） ----------
-let sectorScanCtrl = null;
-
-async function refreshSectors(){
-  const statusEl = $("sectorStatus");
-
-  // 再点一次：停止扫描
-  if (sectorScanCtrl) {
-    sectorScanCtrl.abort();
-    sectorScanCtrl = null;
-    statusEl.textContent = "已停止扫描。";
-    return;
-  }
-
-  const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-  const api = base.replace(/\/+$/,"");
-
-  // —— 先展示缓存（如果有），但不“静默结束”，会明确提示用户下一步怎么做 —— 
-  const cached = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
-  const fresh = cached && cached._savedAt && (Date.now() - cached._savedAt) < UI_CACHE_TTL_MS && !cached._hasFailures;
-
-  // 第一次点：如果有新鲜缓存，先直接用缓存，提示“再点一次强制重新扫描”
-  if (fresh && !window.__sectorForceRefresh) {
-    sectorData = cached;
-    renderSectors();
-    const mins = Math.round((Date.now() - cached._savedAt)/60000);
-    statusEl.textContent = `已使用本地缓存（${mins} 分钟前）。如需强制重新扫描：再点一次“刷新板块动向”。`;
-    window.__sectorForceRefresh = true;
-    return;
-  }
-  window.__sectorForceRefresh = false;
-
-  // 开始分批扫描
-  sectorScanCtrl = new AbortController();
-  const batchSize = 1; // 每批1个，避免触发免费限流
-  const intervalMs = 15000; // 15秒/只（免费额度更稳）
-  const total = SECTOR_ETFS.length;
-
-  // 如果已有旧结果，先渲染出来（让你看到“它在工作”）
-  if (cached && cached.items) {
-    sectorData = cached;
-    renderSectors();
-  }
-
-  statusEl.textContent = `开始分批扫描… 0/${total}（每次扫1只；约${Math.ceil(total*intervalMs/1000/60)}分钟完成；再次点击可停止）`;
-
-  const merged = new Map();
-  // 先把已有缓存塞进 merged（续扫）
-  if (cached && Array.isArray(cached.items)) {
-    for (const it of cached.items) {
-      if (it && it.symbol) merged.set(it.symbol, it);
-    }
-  }
-
-  async function waitWithCountdown(ms){
-    const start = Date.now();
-    while (Date.now() - start < ms) {
-      if (sectorScanCtrl?.signal?.aborted) throw new Error("aborted");
-      const left = Math.max(0, ms - (Date.now() - start));
-      statusEl.textContent = `已完成 ${Math.min(merged.size,total)}/${total}，等待 ${Math.ceil(left/1000)} 秒后继续…（再次点击可停止）`;
-      await new Promise(r=>setTimeout(r, 1000));
-    }
-  }
-
-  try{
-    let done = 0;
-
-    for (let i=0; i<total; i+=batchSize){
-      if (sectorScanCtrl.signal.aborted) throw new Error("aborted");
-
-      const batch = SECTOR_ETFS.slice(i, i+batchSize);
-      statusEl.textContent = `扫描中… ${done}/${total}（本批 ${i+1}-${Math.min(i+batchSize,total)}）`;
-
-      const j = await fetchJsonTimeout(`${api}/api/sector/scan`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ items: batch }),
-        signal: sectorScanCtrl.signal,
-      }, 20000);
-
-      if (j && j.ok === true) {
-        (j.items || []).forEach(it => {
-          if (it && it.symbol) merged.set(it.symbol, it);
-        });
-
-        const all = Array.from(merged.values());
-        const okOnes = all.filter(x => x && x.ok);
-        okOnes.sort((a,b)=>(b.score??-999)-(a.score??-999));
-        const top = okOnes.slice(0, 3);
-
-        sectorData = { ok:true, build: j.build, tz: j.tz, top, items: all };
-        renderSectors();
-        const failCnt2 = all.filter(x => x && x.ok===false).length;
-        localStorage.setItem(LS.sectorCache, JSON.stringify({ ...sectorData, _savedAt: Date.now(), _hasFailures: failCnt2>0 }));
-      } else {
-        const msg = j?.error || j?.reason || "unknown";
-        statusEl.textContent = `本批失败：${msg}（将继续下一批）`;
-      }
-
-      done = Math.min(total, i + batch.length);
-
-      if (done >= total) break;
-
-      // 提醒：如果你刚刷新过技术指标，建议等 1 分钟再扫板块（减少限流）
-      await waitWithCountdown(intervalMs);
-    }
-
-        // 自动重试：如果有失败项（多为 AlphaVantage 限流），冷却后再补扫 1-2 轮
-    const maxRetryPasses = 2;
-    const retryBatchSize = 3;
-    const retryIntervalMs = 70000;
-
-    for (let pass = 1; pass <= maxRetryPasses; pass++) {
-      const todoSyms = SECTOR_ETFS
-        .map(x => x.symbol)
-        .filter(sym => {
-          const r = merged.get(sym);
-          return !r || r.ok !== true;
-        });
-
-      if (!todoSyms.length) break;
-
-      statusEl.textContent = `发现 ${todoSyms.length} 个失败项，冷却后自动重试（第 ${pass}/${maxRetryPasses} 轮）…`;
-      await waitWithCountdown(retryIntervalMs);
-
-      for (let k = 0; k < todoSyms.length; k += retryBatchSize) {
-        if (sectorScanCtrl.signal.aborted) throw new Error("aborted");
-        const chunkSyms = todoSyms.slice(k, k + retryBatchSize);
-        const batch = SECTOR_ETFS.filter(x => chunkSyms.includes(x.symbol));
-
-        statusEl.textContent = `重试中（第 ${pass} 轮）… ${k + 1}-${Math.min(k + retryBatchSize, todoSyms.length)}/${todoSyms.length}`;
-
-        const j = await fetchJsonTimeout(`${api}/api/sector/scan`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: batch }),
-          signal: sectorScanCtrl.signal,
-        }, 20000);
-
-        if (j && j.ok === true) {
-          (j.items || []).forEach(it => {
-            if (it && it.symbol) merged.set(it.symbol, it);
-          });
-
-          const all = Array.from(merged.values());
-          const okOnes = all.filter(x => x && x.ok);
-          okOnes.sort((a, b) => (b.score ?? -999) - (a.score ?? -999));
-          const top = okOnes.slice(0, 3);
-
-          sectorData = { ok: true, build: j.build, tz: j.tz, top, items: all };
-          renderSectors();
-          const failCnt2 = all.filter(x => x && x.ok===false).length;
-          localStorage.setItem(LS.sectorCache, JSON.stringify({ ...sectorData, _savedAt: Date.now(), _hasFailures: failCnt2>0 }));
-        }
-
-        // 重试间隔（避免再次触发限流）
-        if (k + retryBatchSize < todoSyms.length) {
-          await waitWithCountdown(retryIntervalMs);
-        }
-      }
-    }
-
-    const allFinal = Array.from(merged.values());
-    const failCnt = allFinal.filter(x => x && x.ok === false).length;
-    statusEl.textContent = failCnt
-      ? `扫描完成 ✅ ${Math.min(merged.size, total)}/${total}（仍有 ${failCnt} 个失败：多为数据源限流，可稍后再点“刷新板块动向”重试）`
-      : `扫描完成 ✅ ${Math.min(merged.size, total)}/${total}（结果已缓存 6 小时）`;
-  }catch(e){
-    const msg = (e && e.message) ? e.message : String(e);
-    statusEl.textContent = (msg==="aborted") ? "已停止扫描。" : `扫描中断/失败：${msg}`;
-  }finally{
-    sectorScanCtrl = null;
-  }
-}
-
-  function renderSectors(){
-    const data = sectorData;
-    if (!data) return;
-
-    // top
-    const topBox = $("sectorTop");
-    topBox.innerHTML = "";
-    const top = data.top || [];
-    if (!top.length) {
-      topBox.innerHTML = `<div class="mut small">暂无可用结果（可能上游历史数据为空）。</div>`;
-    } else {
-      top.forEach(it => topBox.appendChild(sectorItemDiv(it)));
-    }
-
-    // all (search filter)
-    const key = ($("sectorSearch").value || "").trim().toLowerCase();
-    const allBox = $("sectorAll");
-    allBox.innerHTML = "";
-
-    const items = (data.items || []).slice();
-    const filtered = key
-      ? items.filter(x =>
-          (x.theme||"").toLowerCase().includes(key) ||
-          (x.symbol||"").toLowerCase().includes(key) ||
-          (x.name||"").toLowerCase().includes(key)
-        )
-      : items;
-
-    if (!filtered.length) {
-      allBox.innerHTML = `<div class="mut small">无匹配结果。</div>`;
-      return;
-    }
-
-    filtered.forEach(it => allBox.appendChild(sectorItemDiv(it)));
-  }
-
-  function sectorItemDiv(it){
-    const div = document.createElement("div");
-    div.className = "li";
-
-    if (!it.ok) {
-      div.innerHTML = `
-        <div>
-          <span class="tag tagTheme">${it.theme||"未分类"}</span>
-          <b class="mono">${it.symbol||"-"}</b>
-          <span class="mut">${it.name||""}</span>
-        </div>
-        <div class="mut small">暂无数据（${it.reason||"unknown"}，count=${it.count ?? 0}）</div>
-      `;
-      return div;
-    }
-    const trend = it.trend || deriveTrend(it);
-    const rsiTag = it.rsiTag || deriveRsiTag(it);
-
-    const trendCls = trend==="上行" ? "tagUp" : trend==="下行" ? "tagDown" : "tagNeu";
-    const rsiCls   = rsiTag==="RSI偏热" ? "tagBear" : rsiTag==="RSI偏冷" ? "tagBull" : "tagNeu";
-    const momoCls  = (typeof it.ret20==="number" && it.ret20>=2) ? "tagUp"
-                    : (typeof it.ret20==="number" && it.ret20<=-2) ? "tagDown" : "tagNeu";
-
-    div.innerHTML = `
-      <div>
-        <span class="tag tagTheme">${it.theme}</span>
-        <b class="mono">${it.symbol}</b>
-        <span class="mut">${it.name||""}</span>
-        ${tagHtml(trend, trendCls)}
-        <span class="tag ${momoCls}">动量${(typeof it.ret20==="number"?it.ret20.toFixed(2):"-")}%</span>
-        ${tagHtml(rsiTag, rsiCls)}
-        <span class="tag mono">score≈${it.score ?? "-"}</span>
-      </div>
-      <div class="mut small mono" style="margin-top:6px;">
-        last=${fmt(it.last)} | RSI14=${fmt(it.rsi14)} | ret20=${fmt(it.ret20)}%
-      </div>
-    `;
-    return div;
-  }
-
-  // ---------- AI ----------
-  function saveAI(){
-    const cfg = { baseUrl:$("aiBase").value.trim(), apiKey:$("aiKey").value.trim(), model:$("aiModel").value.trim() };
-    localStorage.setItem(LS.ai, JSON.stringify(cfg));
-    $("aiOut").value = "✅ AI 配置已保存（仅本机）。";
-  }
-
-  async function runAI(){
-    const base = localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND;
-    const api = base.replace(/\/+$/,"");
-
-    const cfg = JSON.parse(localStorage.getItem(LS.ai) || "{}");
-    if(!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("先填写 AI BaseUrl / Key / Model 并保存");
-
-    // 先确保：价格/盈亏最新
-    await refreshAll();
-
-    // 取持仓
-    const holdings = window.positions.map(p=>({
-      type:p.type, code:p.code, name:p.name, amount:p.amount, cost:p.cost,
-      price:p.price, mv:p.mv, pnl:p.pnl, pnlPct:p.pnlPct,
-      nav:p._nav, navDate:p._navDate, estNav:p._estNav, estPct:p._estPct, time:p._time
-    }));
-
-    // 新闻缓存
-    const newsCache = JSON.parse(localStorage.getItem(LS.newsCache) || "null");
-    const newsItems = (newsCache && newsCache.items) ? newsCache.items : [];
-
-    // 风控缓存
-    const risk = JSON.parse(localStorage.getItem(LS.riskCache) || "null");
-
-    // 技术缓存
-    const tech = JSON.parse(localStorage.getItem(LS.techCache) || "null");
-
-    // 板块缓存
-    const sectors = JSON.parse(localStorage.getItem(LS.sectorCache) || "null");
-
-    const messages = [
-      { role:"system", content:
-`你是严格的组合风控与操作建议助手。不要编造数据。
-你必须优先使用我提供的：持仓/新闻/风控/技术指标/板块动向数据。
-必须输出四部分：
-1) 组合风险等级（低/中/高）+ 总仓位建议（例如70%）
-2) 每只持仓：今日动作（买/卖/不动）+一句理由（引用风控/技术/新闻）
-3) 新闻/政策影响：从提供的新闻中提炼3-5条要点，并指出对每个主题/持仓的潜在影响（利好/利空/不确定）
-4) 未来3-6个月：最看好板块Top1 + 推荐基金/ETF代码 + 原因（结合板块动向与新闻）
-注意：不要给出绝对化承诺，强调风险与条件。`
-      },
-      { role:"user", content:
-`【持仓与盈亏（JSON）】\n${JSON.stringify(holdings, null, 2)}\n\n【风控检查（JSON）】\n${JSON.stringify(risk, null, 2)}\n\n【技术指标（JSON）】\n${JSON.stringify(tech, null, 2)}\n\n【板块动向（JSON）】\n${JSON.stringify(sectors, null, 2)}\n\n【新闻（JSON，最多18条）】\n${JSON.stringify(newsItems, null, 2)}\n\n请按要求输出，格式清晰。`
-      }
-    ];
-
-    $("aiOut").value = "生成中…";
-
-    const r = await fetch(`${api}/api/ai/chat`, {
+    const r = await fetch(url, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, model: cfg.model, messages })
+      body: JSON.stringify(body),
+      signal: mergedSignal
     });
+    const j = await r.json();
+    return j;
+  } finally{
+    clearTimeout(t);
+  }
+}
 
-    const text = await r.text();
+function mergeSignals(a,b){
+  if(!a) return b;
+  if(!b) return a;
+  const ctrl = new AbortController();
+  const onAbort = ()=>ctrl.abort();
+  a.addEventListener("abort", onAbort, {once:true});
+  b.addEventListener("abort", onAbort, {once:true});
+  return ctrl.signal;
+}
+
+function setScanStatus(txt){ scanStatus.textContent = txt; }
+
+async function scanAll({force=false, onlyFailed=false}={}){
+  const { merged } = getSectors();
+  if(!merged.length){ setScanStatus("没有板块"); return; }
+
+  if(scanAbort) scanAbort.abort();
+  scanAbort = new AbortController();
+
+  // load cache
+  const cache = loadSectorResults();
+  const map = cache.map || {};
+  const failSet = loadSectorFailSet();
+
+  // determine worklist
+  const ttlOk = 6*60*60*1000;      // 6h
+  const ttlFail = 10*60*1000;      // 10m
+  const now = nowMs();
+
+  const work = [];
+  for(const s of merged){
+    const key = sectorKey(s);
+    const r = map[key];
+    const age = r?.ts ? (now - r.ts) : Infinity;
+    const isOk = r?.ok === true;
+    const shouldByFail = onlyFailed ? failSet.has(key) : true;
+    if(!shouldByFail) continue;
+
+    if(force){
+      work.push(s);
+      continue;
+    }
+    if(isOk && age < ttlOk) continue;
+    if(!isOk && age < ttlFail) continue;
+    work.push(s);
+  }
+
+  if(!work.length){
+    setScanStatus("无需刷新（缓存仍有效）。如要重扫失败项请点：强制重扫失败项。");
+    renderSectorTable();
+    return;
+  }
+
+  const total = work.length;
+  setScanStatus(`开始慢扫 ${total} 个（1个/15秒）。请勿频繁点击其他刷新，避免API限流。`);
+  renderSectorTable();
+
+  let done=0;
+  for(const s of work){
+    if(scanAbort.signal.aborted) { setScanStatus("已停止"); break; }
+
+    done += 1;
+    setScanStatus(`扫描中… ${done}/${total} · ${s.symbol}（${marketTag(s.market)}）`);
+
     try{
-      const j = JSON.parse(text);
-      $("aiOut").value = j?.choices?.[0]?.message?.content || text;
-    }catch{
-      $("aiOut").value = text;
+      const j = await postJson(API_BASE + "/api/sector/scan", { items:[s] }, { timeoutMs: 45000, signal: scanAbort.signal });
+      const item = j?.items?.[0];
+      if(item){
+        const key = sectorKey(s);
+        // normalize store
+        map[key] = { ...item, ts: nowMs(), market:s.market, theme:s.theme, symbol:s.symbol, name:s.name||item.name||null };
+        if(item.ok) failSet.delete(key);
+        else failSet.add(key);
+      }
+      saveSectorResults({ ts: nowMs(), map });
+      saveSectorFailSet(failSet);
+      renderSectorTable();
+    }catch(e){
+      const key = sectorKey(s);
+      map[key] = { ok:false, reason: "request failed/timeout", ts: nowMs(), market:s.market, theme:s.theme, symbol:s.symbol, name:s.name||null };
+      failSet.add(key);
+      saveSectorResults({ ts: nowMs(), map });
+      saveSectorFailSet(failSet);
+      renderSectorTable();
+    }
+
+    if(done < total){
+      // 15s pacing
+      for(let t=15; t>=1; t--){
+        if(scanAbort.signal.aborted) break;
+        setScanStatus(`已完成 ${done}/${total} · 等待 ${t}s 后继续…`);
+        await sleep(1000);
+      }
     }
   }
 
-  load();
+  if(!scanAbort.signal.aborted){
+    const left = Array.from(failSet).filter(k=>{
+      // only those in current sector list
+      return merged.some(s=>sectorKey(s)===k);
+    }).length;
+    setScanStatus(left ? `扫描完成（仍有 ${left} 个失败项，可点“强制重扫失败项”稍后补扫）` : "扫描完成 ✅ 全部有数据");
+  }
+}
+
+/* Buttons */
+$("btnScan").addEventListener("click", ()=>scanAll({force:false, onlyFailed:false}));
+$("btnStopScan").addEventListener("click", ()=>{
+  if(scanAbort) scanAbort.abort();
+  setScanStatus("已停止");
+});
+$("btnForceScan").addEventListener("click", ()=>scanAll({force:true, onlyFailed:true}));
+
+/* =========================
+   Positions
+========================= */
+function loadPositions(){ return loadJson(LS.positions, []); }
+function savePositions(ps){ saveJson(LS.positions, ps); }
+
+function renderPositions(){
+  const ps = loadPositions();
+  const body = $("posTable").querySelector("tbody");
+  body.innerHTML = "";
+  for(const p of ps){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="tag ${p.type==="CN_FUND"?"warn":"info"}">${p.type==="CN_FUND"?"国内":"US"}</span></td>
+      <td class="mono">${escapeHtml(p.code)}</td>
+      <td>${escapeHtml(p.name||"")}</td>
+      <td>${fmtNum(p.weight,1)}</td>
+      <td><button class="btn small danger" data-delpos="${escapeAttr(p.id)}">删除</button></td>
+    `;
+    body.appendChild(tr);
+  }
+  body.querySelectorAll("[data-delpos]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.getAttribute("data-delpos");
+      savePositions(loadPositions().filter(x=>String(x.id)!==String(id)));
+      renderPositions();
+    });
+  });
+}
+
+function posUuid(){ return "p_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16); }
+
+$("btnAddPos").addEventListener("click", ()=>{
+  const type = $("posType").value;
+  let code = $("posCode").value.trim();
+  const name = $("posName").value.trim();
+  const weight = Number($("posWeight").value.trim());
+  if(!code || !Number.isFinite(weight)){
+    alert("请填写：代码 + 权重（数字）");
+    return;
+  }
+  if(type==="CN_FUND"){
+    if(!/^\d{1,6}$/.test(code)){ alert("国内基金/ETF 请输入 1-6 位数字"); return; }
+    code = code.padStart(6,"0");
+  }else{
+    code = code.toUpperCase();
+  }
+  const ps = loadPositions();
+  ps.push({ id: posUuid(), type, code, name: name||null, weight });
+  savePositions(ps);
+  $("posCode").value=""; $("posName").value=""; $("posWeight").value="";
+  renderPositions();
+});
+
+$("btnClearPos").addEventListener("click", ()=>{
+  if(!confirm("清空所有持仓？")) return;
+  savePositions([]);
+  localStorage.removeItem(LS.techCache);
+  renderPositions();
+  renderTechTable([]);
+});
+
+$("btnExportPos").addEventListener("click", ()=>{
+  const ps = loadPositions();
+  const blob = new Blob([JSON.stringify(ps, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "neon_positions.json";
+  a.click();
+});
+
+$("posImportFile").addEventListener("change", async (e)=>{
+  const file = e.target.files?.[0];
+  if(!file) return;
+  try{
+    const txt = await file.text();
+    const j = JSON.parse(txt);
+    if(!Array.isArray(j)) throw new Error("格式必须是数组");
+    savePositions(j);
+    renderPositions();
+    alert("导入成功");
+  }catch(err){
+    alert("导入失败：" + String(err));
+  }finally{
+    e.target.value="";
+  }
+});
+
+/* =========================
+   Tech fetch for positions
+========================= */
+function renderTechTable(items){
+  const body = $("techTable").querySelector("tbody");
+  body.innerHTML = "";
+  for(const it of items){
+    const ok = it.ok === true;
+    const t = ok ? trendFrom(it.sma20, it.sma60) : "—";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(it.code||it.symbol||"")}</td>
+      <td>${labelTrend(t)}</td>
+      <td>${ok ? labelRet(it.ret20) : "—"}</td>
+      <td>${ok ? labelRsi(it.rsi14) : "—"}</td>
+      <td class="small muted">${escapeHtml(ok ? (it.source||it.historySource||"") : (it.reason||""))}</td>
+    `;
+    body.appendChild(tr);
+  }
+}
+
+async function fetchTechForPositions(){
+  const ps = loadPositions();
+  if(!ps.length){ alert("请先添加持仓"); return; }
+  $("techStatus").textContent = "拉取中…";
+  try{
+    const positions = ps.map(p=>{
+      const type = p.type === "CN_FUND" ? "CN_FUND" : "US_TICKER";
+      return { type, code: p.code, name: p.name };
+    });
+    const j = await postJson(API_BASE + "/api/tech/batch", { positions }, { timeoutMs: 60000 });
+    const items = j?.items || [];
+    saveJson(LS.techCache, { ts: nowMs(), items });
+    renderTechTable(items.map(x=>({ ...x, code: x.code })));
+    $("techStatus").textContent = "已更新";
+  }catch(e){
+    $("techStatus").textContent = "失败：" + String(e);
+  }
+}
+$("btnFetchTech").addEventListener("click", fetchTechForPositions);
+
+/* =========================
+   Risk engine (simple, deterministic)
+========================= */
+function computeRiskEngine(){
+  const ps = loadPositions();
+  const totalW = ps.reduce((a,b)=>a + (Number(b.weight)||0), 0);
+  const wNorm = totalW > 0 ? totalW : 100;
+  const sorted = [...ps].sort((a,b)=>(Number(b.weight)||0)-(Number(a.weight)||0));
+  const top1 = sorted[0] ? { code: sorted[0].code, weight: Number(sorted[0].weight)||0 } : null;
+  const top3Sum = sorted.slice(0,3).reduce((a,b)=>a + (Number(b.weight)||0), 0);
+  const singleConcentration = top1 ? +(top1.weight / wNorm * 100).toFixed(1) : null;
+  const top3Concentration = +(top3Sum / wNorm * 100).toFixed(1);
+
+  const flags = [];
+  if(singleConcentration != null && singleConcentration >= 35) flags.push({ level:"warn", rule:"单一持仓占比偏高", value: singleConcentration + "%" });
+  if(top3Concentration >= 70) flags.push({ level:"warn", rule:"前三集中度偏高", value: top3Concentration + "%" });
+  if(ps.filter(p=>p.type==="US_TICKER").length && ps.filter(p=>p.type==="CN_FUND").length===0){
+    flags.push({ level:"info", rule:"地域偏向", value:"主要为海外资产" });
+  }
+  return {
+    totalWeight: +wNorm.toFixed(1),
+    singleConcentration,
+    top3Concentration,
+    top1,
+    flags
+  };
+}
+
+/* =========================
+   Compose AI input (default must-feed)
+   -> Copies a single markdown text to clipboard
+========================= */
+function loadPrompts(){
+  const saved = loadJson(LS.prompt, null);
+  if(saved && saved.system && saved.analysis && saved.tasks) return saved;
+  return structuredClone(DEFAULT_PROMPTS);
+}
+function savePrompts(p){ saveJson(LS.prompt, p); }
+
+function loadKeywords(){
+  const saved = loadJson(LS.keywords, null);
+  if(saved && saved.settings && saved.defaultGroups && saved.customGroups) return saved;
+  return structuredClone(DEFAULT_KW);
+}
+function saveKeywords(k){ saveJson(LS.keywords, k); }
+
+function getTaskPrompt(mode){
+  const p = loadPrompts();
+  return p.tasks?.[mode] || "";
+}
+
+function currentPayload(){
+  const ps = loadPositions();
+  const tech = loadJson(LS.techCache, {ts:0, items:[]});
+  const sectorCache = loadSectorResults();
+  const { merged } = getSectors();
+  const sectors = merged.map(s=>{
+    const key = sectorKey(s);
+    return sectorCache.map?.[key] ? { ...sectorCache.map[key], market:s.market, theme:s.theme, symbol:s.symbol, name:s.name||null } : { ok:false, market:s.market, theme:s.theme, symbol:s.symbol, name:s.name||null, reason:"no scan yet" };
+  });
+  const news = ($("newsBox").value || "").trim();
+  const kw = loadKeywords();
+  const risk = computeRiskEngine();
+  return {
+    meta: { app:"NEON QUANT", ts: new Date().toISOString() },
+    inputs: {
+      positions: ps,
+      techIndicators: tech.items || [],
+      sectorScan: sectors,
+      newsDigest: news ? [{ text: news, source:"user_paste" }] : []
+    },
+    riskEngine: {
+      computed: risk,
+      note: "这是系统规则计算结果，仅用于校验。请AI独立复核并指出一致/不一致原因。"
+    },
+    keywordLibrary: kw
+  };
+}
+
+function composeMarkdown(){
+  const mode = $("taskMode").value;
+  const prompts = loadPrompts();
+  const payload = currentPayload();
+
+  const feedRisk = $("feedRisk").checked;
+  const feedTech = $("feedTech").checked;
+  const feedSectors = $("feedSectors").checked;
+  const feedNews = $("feedNews").checked;
+
+  // Build reduced payload based on toggles (still include keywordLibrary)
+  const reduced = structuredClone(payload);
+  if(!feedTech) reduced.inputs.techIndicators = [];
+  if(!feedSectors) reduced.inputs.sectorScan = [];
+  if(!feedNews) reduced.inputs.newsDigest = [];
+  if(!feedRisk) reduced.riskEngine = { note:"（已关闭风控校验喂入）" };
+
+  const sys = prompts.system || "";
+  const ana = prompts.analysis || "";
+  const task = getTaskPrompt(mode);
+
+  const md = [
+`# NEON QUANT // AI 分析输入`,
+`> 模式：${mode}`,
+``,
+`## System Prompt`,
+sys.trim(),
+``,
+`## Analysis Prompt`,
+ana.trim(),
+``,
+`## Task Prompt`,
+task.trim(),
+``,
+`## Data Payload (JSON)`,
+"```json",
+JSON.stringify(reduced, null, 2),
+"```",
+``,
+`## Output format requirement`,
+`- Now：你建议我现在做什么（1-3条，低维护，不要求盯盘）`,
+`- Next7d：未来7天我留意什么（1-3条）`,
+`- Avoid：我现在不要做什么（1-3条）`,
+`- 可选细节：触发条件/置信度/风险点（如果需要）`
+  ].join("\n");
+
+  return { md, reduced };
+}
+
+async function copyToClipboard(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch{
+    // fallback
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    return true;
+  }
+}
+
+$("btnCompose").addEventListener("click", async ()=>{
+  const { md } = composeMarkdown();
+  await copyToClipboard(md);
+  alert("已复制到剪贴板：直接粘贴给你的AI/ChatGPT即可。");
+});
+
+$("btnShowPayload").addEventListener("click", ()=>{
+  const { reduced } = composeMarkdown();
+  payloadBox.value = JSON.stringify(reduced, null, 2);
+  openModal("modalPayload");
+});
+$("btnCopyPayload").addEventListener("click", async ()=>{
+  await copyToClipboard(payloadBox.value || "");
+  alert("已复制JSON");
+});
+
+/* =========================
+   Prompt modal binding
+========================= */
+function syncPromptModal(){
+  const mode = $("taskMode").value;
+  const p = loadPrompts();
+  $("promptSystem").value = p.system || "";
+  $("promptAnalysis").value = p.analysis || "";
+  $("promptTask").value = p.tasks?.[mode] || "";
+}
+$("taskMode").addEventListener("change", ()=>{
+  syncPromptModal();
+});
+
+$("btnPromptSave").addEventListener("click", ()=>{
+  const mode = $("taskMode").value;
+  const p = loadPrompts();
+  p.system = $("promptSystem").value || "";
+  p.analysis = $("promptAnalysis").value || "";
+  p.tasks = p.tasks || {};
+  p.tasks[mode] = $("promptTask").value || "";
+  savePrompts(p);
+  alert("Prompt 已保存");
+});
+$("btnPromptReset").addEventListener("click", ()=>{
+  if(!confirm("恢复默认 Prompt？会覆盖你当前 Prompt 配置。")) return;
+  savePrompts(structuredClone(DEFAULT_PROMPTS));
+  syncPromptModal();
+  alert("已恢复默认");
+});
+$("btnPromptExport").addEventListener("click", ()=>{
+  const p = loadPrompts();
+  const blob = new Blob([JSON.stringify(p, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "neon_prompts.json";
+  a.click();
+});
+$("promptImportFile").addEventListener("change", async (e)=>{
+  const file = e.target.files?.[0];
+  if(!file) return;
+  try{
+    const txt = await file.text();
+    const j = JSON.parse(txt);
+    if(!j.system || !j.analysis || !j.tasks) throw new Error("格式不对：需要 system/analysis/tasks");
+    savePrompts(j);
+    syncPromptModal();
+    alert("导入成功");
+  }catch(err){
+    alert("导入失败：" + String(err));
+  }finally{
+    e.target.value="";
+  }
+});
+
+/* =========================
+   Keyword modal binding
+========================= */
+function renderKwGroupEditor(container, group, {isCustom=false}={}){
+  const wrap = document.createElement("div");
+  wrap.style.border = "1px solid var(--line)";
+  wrap.style.borderRadius = "14px";
+  wrap.style.padding = "10px";
+  wrap.style.background = "rgba(7,7,10,.35)";
+  wrap.style.marginBottom = "10px";
+
+  wrap.innerHTML = `
+    <div class="row" style="justify-content:space-between;">
+      <div><span class="tag ${group.enabled?"good":"bad"}">${group.enabled?"启用":"禁用"}</span> <b>${escapeHtml(group.name)}</b></div>
+      <div class="row">
+        ${isCustom ? `<button class="btn small danger" data-kwdel="${escapeAttr(group.id)}">删除</button>` : ``}
+        <button class="btn small secondary" data-kvtoggle="${escapeAttr(group.id)}">${group.enabled?"禁用":"启用"}</button>
+      </div>
+    </div>
+    <div class="two" style="margin-top:10px;">
+      <div>
+        <div class="small">中文关键词（每行一条）</div>
+        <textarea class="mono" data-kwzh="${escapeAttr(group.id)}">${(group.zh||[]).join("\n")}</textarea>
+      </div>
+      <div>
+        <div class="small">英文关键词（每行一条）</div>
+        <textarea class="mono" data-kwen="${escapeAttr(group.id)}">${(group.en||[]).join("\n")}</textarea>
+      </div>
+    </div>
+    <div class="two" style="margin-top:10px;">
+      <div>
+        <div class="small">权重(1-5)</div>
+        <input type="number" min="1" max="5" data-kwweight="${escapeAttr(group.id)}" value="${Number(group.weight||3)}">
+      </div>
+      <div>
+        <div class="small">组内条数上限</div>
+        <input type="number" min="1" max="8" data-kwmax="${escapeAttr(group.id)}" value="${Number(group.maxItems||2)}">
+      </div>
+    </div>
+    ${isCustom ? `
+      <div class="small" style="margin-top:10px;">组名（可改）</div>
+      <input data-kwname="${escapeAttr(group.id)}" value="${escapeAttr(group.name)}">
+    ` : ``}
+  `;
+  container.appendChild(wrap);
+}
+
+function syncKeywordsModal(){
+  const kw = loadKeywords();
+  $("kwMaxItems").value = kw.settings?.totalMaxItems ?? 15;
+  $("kwSites").value = (kw.settings?.sites || []).join(", ");
+
+  const def = $("kwDefault");
+  const cus = $("kwCustom");
+  def.innerHTML = ""; cus.innerHTML = "";
+  for(const g of kw.defaultGroups||[]) renderKwGroupEditor(def, g, {isCustom:false});
+  for(const g of kw.customGroups||[]) renderKwGroupEditor(cus, g, {isCustom:true});
+
+  // bind buttons inside
+  $("modalKeywords").querySelectorAll("[data-kvtoggle]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.getAttribute("data-kvtoggle");
+      const kw2 = loadKeywords();
+      const g = (kw2.defaultGroups||[]).find(x=>x.id===id) || (kw2.customGroups||[]).find(x=>x.id===id);
+      if(g){ g.enabled = !g.enabled; saveKeywords(kw2); syncKeywordsModal(); }
+    });
+  });
+  $("modalKeywords").querySelectorAll("[data-kwdel]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.getAttribute("data-kwdel");
+      const kw2 = loadKeywords();
+      kw2.customGroups = (kw2.customGroups||[]).filter(x=>x.id!==id);
+      saveKeywords(kw2);
+      syncKeywordsModal();
+    });
+  });
+}
+
+function readKwEdits(){
+  const kw = loadKeywords();
+  const getLines = (v)=>String(v||"").split("\n").map(s=>s.trim()).filter(Boolean);
+
+  const maxItems = clamp(Number($("kwMaxItems").value||15), 6, 30);
+  const sites = $("kwSites").value.split(",").map(s=>s.trim()).filter(Boolean);
+
+  kw.settings.totalMaxItems = maxItems;
+  kw.settings.sites = sites;
+
+  const applyToGroup = (g)=>{
+    const zhEl = document.querySelector(`[data-kwzh="${cssEsc(g.id)}"]`);
+    const enEl = document.querySelector(`[data-kwen="${cssEsc(g.id)}"]`);
+    const wEl  = document.querySelector(`[data-kwweight="${cssEsc(g.id)}"]`);
+    const mEl  = document.querySelector(`[data-kwmax="${cssEsc(g.id)}"]`);
+    const nEl  = document.querySelector(`[data-kwname="${cssEsc(g.id)}"]`);
+    if(zhEl) g.zh = getLines(zhEl.value);
+    if(enEl) g.en = getLines(enEl.value);
+    if(wEl) g.weight = clamp(Number(wEl.value||3), 1, 5);
+    if(mEl) g.maxItems = clamp(Number(mEl.value||2), 1, 8);
+    if(nEl) g.name = String(nEl.value||g.name);
+  };
+
+  (kw.defaultGroups||[]).forEach(applyToGroup);
+  (kw.customGroups||[]).forEach(applyToGroup);
+  return kw;
+}
+
+$("btnKwSave").addEventListener("click", ()=>{
+  const kw = readKwEdits();
+  saveKeywords(kw);
+  alert("关键词库已保存");
+});
+$("btnKwReset").addEventListener("click", ()=>{
+  if(!confirm("恢复默认关键词库？会覆盖默认组与自定义组。")) return;
+  saveKeywords(structuredClone(DEFAULT_KW));
+  syncKeywordsModal();
+});
+$("btnKwExport").addEventListener("click", ()=>{
+  const kw = readKwEdits();
+  const blob = new Blob([JSON.stringify(kw, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "neon_keywords.json";
+  a.click();
+});
+$("kwImportFile").addEventListener("change", async (e)=>{
+  const file = e.target.files?.[0];
+  if(!file) return;
+  try{
+    const txt = await file.text();
+    const j = JSON.parse(txt);
+    if(!j.settings || !j.defaultGroups || !j.customGroups) throw new Error("格式不对：需要 settings/defaultGroups/customGroups");
+    saveKeywords(j);
+    syncKeywordsModal();
+    alert("导入成功");
+  }catch(err){
+    alert("导入失败：" + String(err));
+  }finally{ e.target.value=""; }
+});
+
+$("btnKwAddCustom").addEventListener("click", ()=>{
+  const kw = loadKeywords();
+  kw.customGroups = kw.customGroups || [];
+  kw.customGroups.push({
+    id: "c_" + Math.random().toString(16).slice(2),
+    name: "自定义主题",
+    enabled: true,
+    weight: 3,
+    maxItems: 2,
+    zh: [],
+    en: []
+  });
+  saveKeywords(kw);
+  syncKeywordsModal();
+});
+
+function buildQueries(){
+  const kw = readKwEdits();
+  const sites = (kw.settings?.sites || []);
+  const siteExpr = sites.length ? " (" + sites.map(s=>"site:"+s).join(" OR ") + ")" : "";
+  const lines = [];
+  const groups = [...(kw.defaultGroups||[]), ...(kw.customGroups||[])].filter(g=>g.enabled);
+  // order by weight desc
+  groups.sort((a,b)=>(b.weight||0)-(a.weight||0));
+  for(const g of groups){
+    lines.push(`## ${g.name}`);
+    const zh = (g.zh||[]).slice(0,10);
+    const en = (g.en||[]).slice(0,10);
+    for(const q of zh){
+      lines.push(`- ${q}${siteExpr}`);
+    }
+    for(const q of en){
+      lines.push(`- ${q}${siteExpr}`);
+    }
+    lines.push("");
+  }
+  const txt = lines.join("\n").trim();
+  $("kwQueries").value = txt;
+  saveKeywords(kw); // persist edits
+}
+
+$("btnKwBuildQueries").addEventListener("click", ()=>{
+  buildQueries();
+  alert("已生成搜索语句（可复制）");
+});
+
+$("btnKwOpenTop").addEventListener("click", ()=>{
+  buildQueries();
+  const kw = loadKeywords();
+  const groups = [...(kw.defaultGroups||[]), ...(kw.customGroups||[])].filter(g=>g.enabled);
+  groups.sort((a,b)=>(b.weight||0)-(a.weight||0));
+  const sites = (kw.settings?.sites || []);
+  const siteExpr = sites.length ? " (" + sites.map(s=>"site:"+s).join(" OR ") + ")" : "";
+  // open top 3 queries
+  const qs = [];
+  for(const g of groups.slice(0,2)){
+    const q = (g.en?.[0] || g.zh?.[0] || "").trim();
+    if(q) qs.push(q + siteExpr);
+  }
+  if(!qs.length){ alert("没有可打开的关键词（请先启用并填入关键词）"); return; }
+  for(const q of qs){
+    const url = "https://www.google.com/search?q=" + encodeURIComponent(q);
+    window.open(url, "_blank");
+  }
+});
+
+/* =========================
+   Floating buttons
+========================= */
+$("fabGuide").addEventListener("click", ()=>openModal("modalGuide"));
+$("fabPrompt").addEventListener("click", ()=>{ syncPromptModal(); openModal("modalPrompt"); });
+$("fabKeywords").addEventListener("click", ()=>{ syncKeywordsModal(); openModal("modalKeywords"); });
+
+/* =========================
+   Utils: html escaping
+========================= */
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, (c)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+  }[c]));
+}
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,"&quot;"); }
+function cssEsc(s){ return String(s).replace(/"/g,'\\"'); }
+
+/* =========================
+   Boot
+========================= */
+initApiBase();
+initNews();
+renderSectorsManage();
+renderSectorTable();
+renderPositions();
+
+// load tech cache if any
+const techCache = loadJson(LS.techCache, null);
+if(techCache?.items) renderTechTable(techCache.items);
+
+// prompt init if missing
+if(!localStorage.getItem(LS.prompt)) savePrompts(structuredClone(DEFAULT_PROMPTS));
+if(!localStorage.getItem(LS.keywords)) saveKeywords(structuredClone(DEFAULT_KW));
+
+// health check
+$("btnHealth").addEventListener("click", checkHealth);
+checkHealth();
+
 </script>
 </body>
 </html>
