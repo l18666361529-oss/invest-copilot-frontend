@@ -3,38 +3,66 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>NEON QUANT // 霓虹投研舱 v3</title>
+  <title>NEON QUANT // 霓虹投研舱 v4</title>
   <style>
     :root{
-      --bg:#0b0f14; --card:#0f1620; --mut:#93a4b7; --fg:#e8f0ff;
-      --pri:#7c5cff; --pri2:#14f195; --bd:rgba(255,255,255,.08);
-      --danger:#ff4d6d; --warn:#ffd166;
+      --bg:#070a0f;
+      --card:#0f1620;
+      --mut:#93a4b7;
+      --fg:#e8f0ff;
+      --pri:#7c5cff;
+      --pri2:#14f195;
+      --bd:rgba(255,255,255,.10);
+      --danger:#ff4d6d;
+      --warn:#ffd166;
+      --shadow: 0 18px 70px rgba(0,0,0,.55);
     }
     *{ box-sizing:border-box; }
 
+    /* --- Neon background (very obvious) --- */
     body{
       margin:0;
-      background:
-        radial-gradient(1200px 700px at 15% -10%, rgba(124,92,255,.28), transparent 60%),
-        radial-gradient(1100px 650px at 85% -15%, rgba(20,241,149,.20), transparent 60%),
-        radial-gradient(900px 520px at 50% 110%, rgba(124,92,255,.12), transparent 55%),
-        linear-gradient(180deg, rgba(10,14,20,1), rgba(8,11,16,1));
+      background: radial-gradient(1200px 700px at 20% -10%, rgba(124,92,255,.30), transparent 60%),
+                  radial-gradient(1100px 650px at 85% -15%, rgba(20,241,149,.22), transparent 60%),
+                  radial-gradient(900px 520px at 50% 115%, rgba(255,77,109,.10), transparent 55%),
+                  linear-gradient(180deg, rgba(7,10,15,1), rgba(6,8,12,1));
       color:var(--fg);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
       overflow-x:hidden;
+      position:relative;
+      min-height:100vh;
     }
+    /* additional glow layers to avoid "看不到光效" */
+    .bgGlow{
+      position:fixed; inset:-20vh -20vw;
+      pointer-events:none;
+      z-index:-2;
+      filter: blur(18px);
+      opacity:.9;
+      mix-blend-mode: screen;
+      animation: glowFloat 14s ease-in-out infinite alternate;
+    }
+    .bgGlow.g1{ background: radial-gradient(closest-side at 18% 22%, rgba(124,92,255,.32), transparent 70%); }
+    .bgGlow.g2{ background: radial-gradient(closest-side at 82% 18%, rgba(20,241,149,.22), transparent 70%); animation-duration: 17s; }
+    .bgGlow.g3{ background: radial-gradient(closest-side at 55% 95%, rgba(124,92,255,.12), transparent 70%); animation-duration: 19s; }
+    @keyframes glowFloat{
+      0%{ transform: translate3d(-10px,-10px,0) scale(1); }
+      100%{ transform: translate3d(10px,12px,0) scale(1.03); }
+    }
+
     body::before{
       content:"";
       position:fixed; inset:0;
       pointer-events:none;
       background:
-        linear-gradient(rgba(124,92,255,.10) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(20,241,149,.08) 1px, transparent 1px);
+        linear-gradient(rgba(124,92,255,.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20,241,149,.10) 1px, transparent 1px);
       background-size: 44px 44px, 44px 44px;
-      opacity:.20;
+      opacity:.22;
       mix-blend-mode: screen;
       transform: translateZ(0);
       animation: gridDrift 14s linear infinite;
+      z-index:-1;
     }
     body::after{
       content:"";
@@ -43,15 +71,16 @@
       background:
         repeating-linear-gradient(
           to bottom,
-          rgba(255,255,255,.05) 0px,
-          rgba(255,255,255,.05) 1px,
+          rgba(255,255,255,.06) 0px,
+          rgba(255,255,255,.06) 1px,
           transparent 3px,
-          transparent 6px
+          transparent 7px
         );
-      opacity:.07;
+      opacity:.08;
       mix-blend-mode: overlay;
       transform: translateZ(0);
       animation: scanMove 9s linear infinite;
+      z-index:-1;
     }
     @keyframes gridDrift{
       0%{ background-position: 0 0, 0 0; }
@@ -59,28 +88,16 @@
     }
     @keyframes scanMove{
       0%{ background-position: 0 0; }
-      100%{ background-position: 0 140px; }
+      100%{ background-position: 0 160px; }
     }
 
     a{ color:inherit; }
-    .wrap{ max-width: 980px; margin: 0 auto; padding: 14px 14px 120px; position:relative; }
-    .wrap::before{
-      content:"";
-      position:absolute; inset:-80px -40px auto -40px;
-      height: 260px;
-      background:
-        radial-gradient(closest-side at 20% 30%, rgba(124,92,255,.22), transparent 70%),
-        radial-gradient(closest-side at 80% 40%, rgba(20,241,149,.18), transparent 70%);
-      filter: blur(12px);
-      opacity:.9;
-      pointer-events:none;
-      z-index:-1;
-    }
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 14px 14px 120px; position:relative; z-index:1; }
 
     .topbar{
       position:sticky; top:0; z-index:5;
       backdrop-filter: blur(10px);
-      background: linear-gradient(to bottom, rgba(11,15,20,.92), rgba(11,15,20,.65));
+      background: linear-gradient(to bottom, rgba(7,10,15,.92), rgba(7,10,15,.65));
       border-bottom: 1px solid var(--bd);
     }
     .topbar .inner{ max-width:980px; margin:0 auto; padding:12px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between; }
@@ -100,11 +117,11 @@
     @media (min-width:860px){ .grid{ grid-template-columns: 1fr 1fr; } }
 
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
       border:1px solid var(--bd);
-      border-radius:16px;
+      border-radius:18px;
       padding:14px;
-      box-shadow: 0 10px 40px rgba(0,0,0,.25);
+      box-shadow: var(--shadow);
     }
     h3{ margin:0 0 10px; font-size:16px; }
     .mut{ color: var(--mut); }
@@ -135,8 +152,9 @@
       touch-action: manipulation;
     }
     button.primary{
-      background: linear-gradient(135deg, rgba(124,92,255,.85), rgba(20,241,149,.55));
-      border-color: rgba(255,255,255,.12);
+      background: linear-gradient(135deg, rgba(124,92,255,.90), rgba(20,241,149,.60));
+      border-color: rgba(255,255,255,.14);
+      box-shadow: 0 10px 35px rgba(124,92,255,.20);
     }
     button.secondary{ background: rgba(255,255,255,.02); }
     button.danger{ background: rgba(255,77,109,.12); border-color: rgba(255,77,109,.25); }
@@ -159,6 +177,7 @@
       background: rgba(255,255,255,.02);
       color: var(--mut);
       user-select:none;
+      max-width:100%;
     }
     .tag.good{ border-color: rgba(20,241,149,.35); color:#bfffe8; }
     .tag.bad{ border-color: rgba(255,77,109,.35); color:#ffd1da; }
@@ -225,8 +244,8 @@
       z-index: 15;
       border-radius: 999px;
       padding: 12px 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(124,92,255,.20);
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(124,92,255,.22);
       backdrop-filter: blur(10px);
       box-shadow: 0 10px 40px rgba(0,0,0,.35);
       display:flex; gap:8px; align-items:center;
@@ -235,15 +254,37 @@
     .fab .dot{
       width:10px; height:10px; border-radius:999px;
       background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(20,241,149,.85));
-      box-shadow: 0 0 18px rgba(124,92,255,.45);
+      box-shadow: 0 0 22px rgba(124,92,255,.55);
     }
+
+    .toast{
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom: calc(74px + env(safe-area-inset-bottom));
+      z-index: 50;
+      padding:10px 12px;
+      border-radius: 12px;
+      border:1px solid var(--bd);
+      background: rgba(15,22,32,.88);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 14px 55px rgba(0,0,0,.55);
+      color:var(--fg);
+      font-weight:800;
+      display:none;
+      max-width: calc(100vw - 24px);
+    }
+    .toast.show{ display:block; }
   </style>
 </head>
 <body>
+  <!-- extra neon glow layers -->
+  <div class="bgGlow g1"></div>
+  <div class="bgGlow g2"></div>
+  <div class="bgGlow g3"></div>
+
   <div class="topbar">
     <div class="inner">
       <div class="brand">
-        <div class="badge"><span style="opacity:.9">NEON QUANT</span> <span class="pill mono" id="buildTag">v3</span></div>
+        <div class="badge"><span style="opacity:.9">NEON QUANT</span> <span class="pill mono" id="buildTag">v4</span></div>
         <div class="badge small">移动端优先 · 数据驱动 · 不承诺收益</div>
       </div>
       <div class="row">
@@ -293,7 +334,7 @@
       </div>
 
       <div class="card">
-        <h3>③ 我的持仓（含技术/风控摘要）</h3>
+        <h3>③ 我的持仓（自动补全名称）</h3>
         <div class="row">
           <button class="primary" onclick="openPosEditor()">➕ 添加持仓</button>
           <button class="secondary" onclick="refreshAll()">🔄 刷新行情/净值</button>
@@ -333,7 +374,7 @@
       </div>
 
       <div class="card">
-        <h3>④ 新闻与政策（支持美国来源 + 中英关键词）</h3>
+        <h3>④ 新闻与政策（0条时自动回退显示“最新要闻”）</h3>
         <div class="row">
           <textarea id="kwZh" placeholder="中文关键词（用逗号分隔）：例如 降准, 地产, 国企改革, 恒生科技, 数据要素..."></textarea>
         </div>
@@ -353,9 +394,8 @@
 
         <details style="margin-top:10px;">
           <summary>自定义 RSS（每行一个 URL，只有选择“自定义 RSS”才会使用）</summary>
-          <textarea id="rssCustom" placeholder="https://...
-https://..."></textarea>
-          <div class="mut small">提示：建议用稳定 RSS（例如 MarketWatch 官方 RSS 页、Bloomberg feeds、CNBC 各栏目 RSS）。</div>
+          <textarea id="rssCustom" placeholder="https://...\nhttps://..."></textarea>
+          <div class="mut small">提示：你可以把任何可用 RSS 丢进来（比如你信任的媒体/机构）。</div>
         </details>
 
         <div class="row" style="margin-top:10px;">
@@ -419,6 +459,8 @@ https://..."></textarea>
     <div class="mut small">指标标签解释</div>
   </div>
 
+  <div id="toast" class="toast"></div>
+
   <div id="mask" class="mask" onclick="closeSheet(event)">
     <div class="sheet" onclick="event.stopPropagation()">
       <div class="sheetHead">
@@ -434,9 +476,16 @@ https://..."></textarea>
   </div>
 
 <script>
+/* ===== v4 fixes =====
+1) 修复部分手机浏览器不支持 crypto.randomUUID 导致按钮“没反应”
+2) 添加持仓时：自动补全基金/标的名称（后端 /api/meta/resolve）
+3) 新闻：关键词命中为0时自动回退显示最新要闻（后端已做回退）
+4) 背景：增强霓虹光效（额外 glow layers）
+*/
+
 const LS = {
   backend: "nq_backend",
-  positions: "nq_positions_v3",
+  positions: "nq_positions_v4",
   ai: "nq_ai",
   prompts: "nq_prompts",
   news: "nq_news",
@@ -448,6 +497,18 @@ const LS = {
 };
 const DEFAULT_BACKEND = (localStorage.getItem(LS.backend) || "").trim() || "http://localhost:3000";
 const $ = (id)=>document.getElementById(id);
+
+function uuid(){
+  try{
+    if (globalThis.crypto && crypto.randomUUID) return crypto.randomUUID();
+  }catch(e){}
+  // fallback UUID v4-ish
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c)=>{
+    const r = (Math.random()*16)|0;
+    const v = c==="x" ? r : (r&0x3)|0x8;
+    return v.toString(16);
+  });
+}
 function safeJsonParse(s, fallback){ try{ return JSON.parse(s); }catch{ return fallback; } }
 function fmtMoney(x){
   if (x==null || !isFinite(x)) return "-";
@@ -457,63 +518,76 @@ function fmtMoney(x){
 }
 function clampStr(s, max=6000){ s=String(s||""); return s.length<=max? s : s.slice(0,max)+"\n[...已截断...]"; }
 
+function toast(msg, ms=1800){
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(window.__toastT);
+  window.__toastT = setTimeout(()=>el.classList.remove("show"), ms);
+}
+
 function init(){
-  $("backend").value = localStorage.getItem(LS.backend) || DEFAULT_BACKEND;
-  const ai = safeJsonParse(localStorage.getItem(LS.ai), {});
-  $("aiBase").value = ai.baseUrl || "https://api.openai.com";
-  $("aiKey").value = ai.apiKey || "";
-  $("aiModel").value = ai.model || "";
-  $("outLang").value = ai.outLang || "zh";
-  $("aiCfgOut").textContent = ai.model ? "✅ 已加载本机 AI 配置" : "未配置。";
+  try{
+    $("backend").value = localStorage.getItem(LS.backend) || DEFAULT_BACKEND;
+    const ai = safeJsonParse(localStorage.getItem(LS.ai), {});
+    $("aiBase").value = ai.baseUrl || "https://api.openai.com";
+    $("aiKey").value = ai.apiKey || "";
+    $("aiModel").value = ai.model || "";
+    $("outLang").value = ai.outLang || "zh";
+    $("aiCfgOut").textContent = ai.model ? "✅ 已加载本机 AI 配置" : "未配置。";
 
-  const news = safeJsonParse(localStorage.getItem(LS.news), {});
-  $("kwZh").value = news.kwZh || "";
-  $("kwEn").value = news.kwEn || "";
-  $("newsSourcePreset").value = news.preset || "mixed";
-  $("newsLimit").value = news.limit || 18;
-  $("rssCustom").value = (news.customRss || []).join("\n");
+    const news = safeJsonParse(localStorage.getItem(LS.news), {});
+    $("kwZh").value = news.kwZh || "";
+    $("kwEn").value = news.kwEn || "";
+    $("newsSourcePreset").value = news.preset || "mixed";
+    $("newsLimit").value = news.limit || 18;
+    $("rssCustom").value = (news.customRss || []).join("\n");
 
-  window.positions = safeJsonParse(localStorage.getItem(LS.positions), defaultPositions());
-  renderPositions();
+    window.positions = safeJsonParse(localStorage.getItem(LS.positions), defaultPositions());
+    renderPositions();
 
-  const risk = safeJsonParse(localStorage.getItem(LS.riskCache), null);
-  if (risk && risk.ok) renderRisk(risk);
+    const risk = safeJsonParse(localStorage.getItem(LS.riskCache), null);
+    if (risk && risk.ok) renderRisk(risk);
 
-  const tech = safeJsonParse(localStorage.getItem(LS.techCache), null);
-  if (tech && tech.ok) window.techCache = tech;
+    const tech = safeJsonParse(localStorage.getItem(LS.techCache), null);
+    if (tech && tech.ok) window.techCache = tech;
 
-  const sectors = safeJsonParse(localStorage.getItem(LS.sectorCache), null);
-  if (sectors && sectors.ok) { window.sectorCache = sectors; renderSectors(); }
+    const sectors = safeJsonParse(localStorage.getItem(LS.sectorCache), null);
+    if (sectors && sectors.ok) { window.sectorCache = sectors; renderSectors(); }
 
-  const newsCache = safeJsonParse(localStorage.getItem(LS.newsCache), null);
-  if (newsCache && newsCache.ok) renderNews(newsCache.items||[]);
+    const newsCache = safeJsonParse(localStorage.getItem(LS.newsCache), null);
+    if (newsCache && newsCache.ok) renderNews(newsCache.items||[], newsCache);
 
-  ensurePrompts();
-  ensureSectorCfg();
+    ensurePrompts();
+    ensureSectorCfg();
 
-  $("buildTag").textContent = "v3";
+    $("buildTag").textContent = "v4";
+  }catch(e){
+    console.error(e);
+    toast("页面初始化失败：可能是浏览器兼容性问题（已在v4加强兼容）");
+  }
 }
 window.addEventListener("load", init);
 
 function defaultPositions(){
   return [
-    { id: crypto.randomUUID(), type:"CN_FUND", code:"019449", name:"示例：恒生科技ETF联接", amount: 10000, cost: null },
-    { id: crypto.randomUUID(), type:"US_TICKER", code:"QQQ", name:"示例：纳指100ETF", amount: 10000, cost: null },
+    { id: uuid(), type:"CN_FUND", code:"019449", name:"", amount: 10000, cost: null },
+    { id: uuid(), type:"US_TICKER", code:"QQQ", name:"", amount: 10000, cost: null },
   ];
 }
 function defaultSectorCfg(){
   return {
     sectors: [
-      { id: crypto.randomUUID(), name:"半导体", market:"US", tickers:["SOXX","SMH"] },
-      { id: crypto.randomUUID(), name:"AI/科技", market:"US", tickers:["QQQ","XLK"] },
-      { id: crypto.randomUUID(), name:"能源/原油", market:"US", tickers:["XLE","USO"] },
-      { id: crypto.randomUUID(), name:"黄金", market:"US", tickers:["GLD","IAU"] },
-      { id: crypto.randomUUID(), name:"中国互联网", market:"CN", etfs:["513180","513330"] },
-      { id: crypto.randomUUID(), name:"医药", market:"CN", etfs:["512010","512170"] },
-      { id: crypto.randomUUID(), name:"煤炭", market:"CN", etfs:["515220"] },
-      { id: crypto.randomUUID(), name:"军工", market:"CN", etfs:["512660"] },
-      { id: crypto.randomUUID(), name:"机器人", market:"CN", etfs:["562500"] },
-      { id: crypto.randomUUID(), name:"印度", market:"US", tickers:["INDA"] },
+      { id: uuid(), name:"半导体", market:"US", tickers:["SOXX","SMH"] },
+      { id: uuid(), name:"AI/科技", market:"US", tickers:["QQQ","XLK"] },
+      { id: uuid(), name:"能源/原油", market:"US", tickers:["XLE","USO"] },
+      { id: uuid(), name:"黄金", market:"US", tickers:["GLD","IAU"] },
+      { id: uuid(), name:"中国互联网", market:"CN", etfs:["513180","513330"] },
+      { id: uuid(), name:"医药", market:"CN", etfs:["512010","512170"] },
+      { id: uuid(), name:"煤炭", market:"CN", etfs:["515220"] },
+      { id: uuid(), name:"军工", market:"CN", etfs:["512660"] },
+      { id: uuid(), name:"机器人", market:"CN", etfs:["562500"] },
+      { id: uuid(), name:"印度", market:"US", tickers:["INDA"] },
     ]
   };
 }
@@ -535,6 +609,7 @@ function saveBackend(){
   if (!v) return alert("请输入后端地址");
   localStorage.setItem(LS.backend, v);
   $("healthOut").textContent = "✅ 已保存。";
+  toast("已保存后端地址");
 }
 async function checkHealth(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
@@ -543,8 +618,10 @@ async function checkHealth(){
     const r = await fetch(`${base}/health`);
     const j = await r.json();
     $("healthOut").textContent = j.ok ? `✅ OK | build=${j.build} | tz=${j.tz}` : "❌ 未通过";
+    toast(j.ok ? "后端连接正常" : "后端健康检查未通过");
   }catch(e){
     $("healthOut").textContent = "❌ 无法连接后端：" + (e?.message || e);
+    toast("无法连接后端（检查地址/端口/跨域）", 2500);
   }
 }
 
@@ -558,12 +635,14 @@ function saveAI(){
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("请填写 BaseUrl / Key / Model");
   localStorage.setItem(LS.ai, JSON.stringify(cfg));
   $("aiCfgOut").textContent = "✅ AI 配置已保存（仅本机浏览器）。";
+  toast("AI 配置已保存");
 }
 function clearAI(){
   localStorage.removeItem(LS.ai);
   $("aiKey").value = "";
   $("aiModel").value = "";
   $("aiCfgOut").textContent = "已清空。";
+  toast("已清空 AI 配置");
 }
 
 function persistPositions(){ localStorage.setItem(LS.positions, JSON.stringify(window.positions)); }
@@ -588,7 +667,7 @@ function renderPositions(){
     div.innerHTML = `
       <div class="liHead">
         <div style="min-width: 0;">
-          <div class="liTitle">${escapeHtml(p.name||"-")} <span class="mut mono">${escapeHtml(p.code||"")}</span></div>
+          <div class="liTitle">${escapeHtml((p.name||"").trim() || "（未解析名称）")} <span class="mut mono">${escapeHtml(p.code||"")}</span></div>
           <div class="liMeta">
             <span class="tag">金额：${fmtMoney(p.amount)}</span>
             <span class="tag">市值：${fmtMoney(p.mv||p.amount)}</span>
@@ -607,7 +686,7 @@ function renderPositions(){
 }
 
 function openPosEditor(pos){
-  const p = pos || { id: crypto.randomUUID(), type:"CN_FUND", code:"", name:"", amount:0, cost:null };
+  const p = pos || { id: uuid(), type:"CN_FUND", code:"", name:"", amount:0, cost:null };
   const body = document.createElement("div");
   body.innerHTML = `
     <div class="row">
@@ -618,16 +697,19 @@ function openPosEditor(pos){
       <input id="peCode" placeholder="代码，例如 513180 或 QQQ" />
     </div>
     <div class="row" style="margin-top:10px;">
-      <input id="peName" placeholder="名称（可选）" />
+      <input id="peName" placeholder="名称将自动补全（也可手动改）" />
     </div>
     <div class="row" style="margin-top:10px;">
       <input id="peAmount" type="number" placeholder="持有金额" />
       <input id="peCost" type="number" placeholder="成本价/成本净值（可选）" />
     </div>
-    <div class="mut small" style="margin-top:10px;" id="peHint">提示：金额用于计算占比与集中度；成本用于收益率估算（可不填）。</div>
+    <div class="row" style="margin-top:10px;">
+      <button class="secondary" onclick="resolvePosName()">✨ 自动补全名称</button>
+      <div class="mut small" id="peHint" style="flex:1;">提示：输入代码后点“自动补全名称”，或直接保存会自动尝试补全。</div>
+    </div>
   `;
   $("sheetTitle").textContent = pos ? "编辑持仓" : "添加持仓";
-  $("sheetSub").textContent = "支持触屏操作：大按钮/大输入框";
+  $("sheetSub").textContent = "v4：修复保存无反应 + 自动补全名称";
   $("sheetBody").innerHTML = "";
   $("sheetBody").appendChild(body);
   $("sheetFoot").style.display = "flex";
@@ -648,27 +730,68 @@ function delPos(id){
   window.positions = window.positions.filter(x=>x.id!==id);
   persistPositions();
   renderPositions();
+  toast("已删除");
 }
-function savePosEditor(id){
+
+// 自动解析名称
+async function resolvePosName(){
+  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const type = $("peType").value;
-  const code = $("peCode").value.trim().toUpperCase();
-  const name = $("peName").value.trim();
-  const amount = Number($("peAmount").value || 0);
-  const costRaw = $("peCost").value;
-  const cost = (costRaw==="" ? null : Number(costRaw));
-  if (!code) return alert("请输入代码");
-  if (!isFinite(amount) || amount<=0) return alert("请输入正确金额");
-  if (type==="CN_FUND" && !/^\d{6}$/.test(code)) return alert("国内基金/ETF代码应为 6 位数字");
-  if (type==="US_TICKER" && !/^[A-Z0-9\.-]{1,12}$/.test(code)) return alert("Ticker 格式不正确");
+  const code = ($("peCode").value || "").trim().toUpperCase();
+  if (!code) return toast("先输入代码");
+  $("peHint").textContent = "解析名称中…";
+  try{
+    const r = await fetch(`${base}/api/meta/resolve`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ type, code })
+    });
+    const j = await r.json();
+    if (!j.ok) {
+      $("peHint").textContent = "解析失败：" + (j.error||"");
+      return;
+    }
+    if (j.name) $("peName").value = j.name;
+    $("peHint").textContent = j.name ? "✅ 已自动补全名称" : "未能解析名称（可手动输入）";
+    toast(j.name ? "名称已补全" : "未解析到名称");
+  }catch(e){
+    $("peHint").textContent = "解析失败：" + (e?.message||e);
+    toast("解析名称失败（检查后端/网络）", 2200);
+  }
+}
 
-  const idx = window.positions.findIndex(x=>x.id===id);
-  const obj = { id, type, code, name: name||null, amount, cost };
-  if (idx>=0) window.positions[idx] = { ...window.positions[idx], ...obj };
-  else window.positions.unshift(obj);
+async function savePosEditor(id){
+  try{
+    const type = $("peType").value;
+    const code = ($("peCode").value || "").trim().toUpperCase();
+    let name = ($("peName").value || "").trim();
+    const amount = Number($("peAmount").value || 0);
+    const costRaw = $("peCost").value;
+    const cost = (costRaw==="" ? null : Number(costRaw));
+    if (!code) return alert("请输入代码");
+    if (!isFinite(amount) || amount<=0) return alert("请输入正确金额");
+    if (type==="CN_FUND" && !/^\d{6}$/.test(code)) return alert("国内基金/ETF代码应为 6 位数字");
+    if (type==="US_TICKER" && !/^[A-Z0-9\.-]{1,12}$/.test(code)) return alert("Ticker 格式不正确");
 
-  persistPositions();
-  renderPositions();
-  closeSheet();
+    // 若名称为空：自动尝试补全
+    if (!name){
+      await resolvePosName();
+      name = ($("peName").value || "").trim();
+    }
+
+    const idx = window.positions.findIndex(x=>x.id===id);
+    const obj = { id, type, code, name: name||"", amount, cost };
+    if (idx>=0) window.positions[idx] = { ...window.positions[idx], ...obj };
+    else window.positions.unshift(obj);
+
+    persistPositions();
+    renderPositions();
+    closeSheet();
+    toast("已保存持仓");
+  }catch(e){
+    console.error(e);
+    alert("保存失败：" + (e?.message||e));
+  }
 }
 
 async function refreshAll(){
@@ -694,6 +817,7 @@ async function refreshRisk(){
     if (!j.ok) return alert("风控检查失败：" + (j.error||""));
     localStorage.setItem(LS.riskCache, JSON.stringify(j));
     renderRisk(j);
+    toast("风控已更新");
   }catch(e){
     alert("风控接口不可用：" + (e?.message||e));
   }
@@ -704,6 +828,7 @@ function renderRisk(j){
   $("riskExplain").textContent = j.summary || "-";
   $("riskDetail").textContent = (j.details||[]).join("  ·  ") || "-";
 }
+
 async function refreshTech(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const payload = window.positions.map(p=>({ type:p.type, code:p.code, name:p.name, amount:p.amount, mv:(p.mv||p.amount) }));
@@ -733,6 +858,7 @@ async function refreshTech(){
     }
     persistPositions();
     renderPositions();
+    toast("技术指标已更新");
   }catch(e){
     alert("技术指标接口不可用：" + (e?.message||e));
   }
@@ -748,11 +874,13 @@ function saveNewsConfig(){
   };
   localStorage.setItem(LS.news, JSON.stringify(cfg));
   $("newsStatus").textContent = "✅ 已保存新闻配置。";
+  toast("已保存新闻配置");
 }
 function clearNews(){
   localStorage.removeItem(LS.newsCache);
   $("newsList").innerHTML = "";
   $("newsStatus").textContent = "已清空。";
+  toast("已清空新闻");
 }
 async function fetchNews(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
@@ -763,6 +891,7 @@ async function fetchNews(){
 
   $("newsStatus").textContent = "抓取中…";
   $("newsList").innerHTML = `<div class="mut small">抓取中…</div>`;
+  toast("正在抓取新闻…");
 
   try{
     const r = await fetch(`${base}/api/news/rss`, {
@@ -778,13 +907,16 @@ async function fetchNews(){
     const j = await r.json();
     if (!j.ok) return alert("抓取新闻失败：" + (j.error||""));
     localStorage.setItem(LS.newsCache, JSON.stringify(j));
-    $("newsStatus").textContent = `✅ 获取 ${j.items?.length||0} 条（去重后）`;
-    renderNews(j.items||[]);
+    const hit = j.matched ?? (j.items?.length||0);
+    $("newsStatus").textContent = j.fallback ? `⚠️ 关键词命中0条，已回退显示最新要闻（${j.items?.length||0}条）` : `✅ 获取 ${j.items?.length||0} 条`;
+    renderNews(j.items||[], j);
+    toast(j.fallback ? "命中0条：已回退显示要闻" : "新闻已更新");
   }catch(e){
     $("newsStatus").textContent = "❌ 抓取失败：" + (e?.message||e);
+    toast("抓取失败（检查后端/网络）", 2200);
   }
 }
-function renderNews(items){
+function renderNews(items, meta){
   const box = $("newsList");
   box.innerHTML = "";
   if (!items.length){
@@ -817,6 +949,13 @@ function renderNews(items){
     `;
     box.appendChild(div);
   }
+  if (meta?.fallback){
+    const note = document.createElement("div");
+    note.className = "mut small";
+    note.style.marginTop = "8px";
+    note.textContent = "说明：关键词命中为0时，会回退显示最新要闻（避免空列表）。你可改用英文关键词或切换来源/自定义RSS提高相关性。";
+    box.prepend(note);
+  }
 }
 
 let sectorScanCtrl = null;
@@ -847,7 +986,7 @@ function openSectorManager(){
     </div>
   `;
   $("sheetTitle").textContent = "管理板块";
-  $("sheetSub").textContent = "✅ 现在支持滚动：板块再多也能管理";
+  $("sheetSub").textContent = "✅ 支持滚动：板块再多也能管理";
   $("sheetBody").innerHTML = "";
   $("sheetBody").appendChild(body);
   $("sheetFoot").style.display = "flex";
@@ -897,11 +1036,12 @@ function saveNewSector(){
     if (!tickers.length) return alert("美股板块必须至少包含一个合法 Ticker");
   }
   const cfg = getSectorCfg();
-  cfg.sectors.unshift({ id: crypto.randomUUID(), name, market, etfs, tickers });
+  cfg.sectors.unshift({ id: uuid(), name, market, etfs, tickers });
   localStorage.setItem(LS.sectorCfg, JSON.stringify(cfg));
   renderSectorMgrList(cfg);
   $("secNewName").value = "";
   $("secNewTickers").value = "";
+  toast("已添加板块");
 }
 function deleteSector(id){
   if (!confirm("确定删除这个板块？")) return;
@@ -909,13 +1049,15 @@ function deleteSector(id){
   cfg.sectors = cfg.sectors.filter(s=>s.id!==id);
   localStorage.setItem(LS.sectorCfg, JSON.stringify(cfg));
   renderSectorMgrList(cfg);
+  toast("已删除板块");
 }
 
 async function refreshSectors(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const cfg = getSectorCfg();
-  if (sectorScanCtrl) { sectorScanCtrl.abort(); sectorScanCtrl=null; $("sectorStatus").textContent="已停止扫描。"; return; }
+  if (sectorScanCtrl) { sectorScanCtrl.abort(); sectorScanCtrl=null; $("sectorStatus").textContent="已停止扫描。"; toast("已停止"); return; }
   $("sectorStatus").textContent = "扫描中…（再次点击可停止）";
+  toast("扫描板块中…", 2000);
   sectorScanCtrl = new AbortController();
   const items = [];
   for (const s of cfg.sectors){
@@ -936,10 +1078,12 @@ async function refreshSectors(){
     window.sectorCache = j;
     $("sectorStatus").textContent = `✅ 已更新：${j.items?.length||0} 条`;
     renderSectors();
+    toast("板块已更新");
   }catch(e){
     if (String(e?.name||"").includes("Abort")) { $("sectorStatus").textContent="已停止。"; return; }
     sectorScanCtrl = null;
     $("sectorStatus").textContent = "❌ 扫描失败：" + (e?.message||e);
+    toast("扫描失败", 2200);
   }
 }
 function renderSectors(){
@@ -1051,7 +1195,7 @@ function pmSaveTask(){
   const k = $("pmTaskKey").value;
   p.taskPrompts[k] = $("pmTaskText").value;
   localStorage.setItem(LS.prompts, JSON.stringify(p));
-  alert("已保存该 Task Prompt。");
+  toast("已保存该 Task Prompt");
 }
 function pmSaveAll(){
   const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
@@ -1059,7 +1203,7 @@ function pmSaveAll(){
   const k = $("pmTaskKey").value;
   p.taskPrompts[k] = $("pmTaskText").value;
   localStorage.setItem(LS.prompts, JSON.stringify(p));
-  alert("✅ 已保存。");
+  toast("已保存 Prompt");
   closeSheet();
 }
 function pmRestoreDefaults(){
@@ -1069,7 +1213,7 @@ function pmRestoreDefaults(){
 }
 async function pmCopy(){
   const txt = `Analysis Prompt:\n\n${$("pmAnalysis").value}\n\nTask(${ $("pmTaskKey").value }):\n\n${$("pmTaskText").value}`;
-  try{ await navigator.clipboard.writeText(txt); alert("已复制。"); }
+  try{ await navigator.clipboard.writeText(txt); toast("已复制"); }
   catch{ alert("复制失败，请手动复制。"); }
 }
 
@@ -1122,8 +1266,10 @@ async function runAI(){
       content = j?.choices?.[0]?.message?.content || j?.output_text || text;
     }catch{}
     $("aiOut").value = content;
+    toast("AI 输出已生成");
   }catch(e){
     $("aiOut").value = "❌ 生成失败：" + (e?.message || e);
+    toast("AI 生成失败", 2200);
   }
 }
 
