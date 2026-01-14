@@ -852,7 +852,7 @@ async function refreshAll(force=false){
     const r = await fetch(`${base}/api/quote/batch`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload, force: !!force })
+      body: JSON.stringify({ positions: payload })
     });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || "quote failed");
@@ -904,7 +904,7 @@ async function refreshRisk(){
     const r = await fetch(`${base}/api/risk/check`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload, force: !!force })
+      body: JSON.stringify({ positions: payload })
     });
     const j = await r.json();
     if (!j.ok) return alert("风控检查失败：" + (j.error||""));
