@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>NEON QUANT // 霓虹投研舱 v2</title>
+  <title>NEON QUANT // 霓虹投研舱 v3</title>
   <style>
     :root{
       --bg:#0b0f14; --card:#0f1620; --mut:#93a4b7; --fg:#e8f0ff;
@@ -11,14 +11,72 @@
       --danger:#ff4d6d; --warn:#ffd166;
     }
     *{ box-sizing:border-box; }
+
     body{
-      margin:0; background:radial-gradient(1200px 600px at 20% 0%, rgba(124,92,255,.18), transparent 60%),
-              radial-gradient(1200px 600px at 80% 0%, rgba(20,241,149,.12), transparent 60%),
-              var(--bg);
-      color:var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+      margin:0;
+      background:
+        radial-gradient(1200px 700px at 15% -10%, rgba(124,92,255,.28), transparent 60%),
+        radial-gradient(1100px 650px at 85% -15%, rgba(20,241,149,.20), transparent 60%),
+        radial-gradient(900px 520px at 50% 110%, rgba(124,92,255,.12), transparent 55%),
+        linear-gradient(180deg, rgba(10,14,20,1), rgba(8,11,16,1));
+      color:var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+      overflow-x:hidden;
     }
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(124,92,255,.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20,241,149,.08) 1px, transparent 1px);
+      background-size: 44px 44px, 44px 44px;
+      opacity:.20;
+      mix-blend-mode: screen;
+      transform: translateZ(0);
+      animation: gridDrift 14s linear infinite;
+    }
+    body::after{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,.05) 0px,
+          rgba(255,255,255,.05) 1px,
+          transparent 3px,
+          transparent 6px
+        );
+      opacity:.07;
+      mix-blend-mode: overlay;
+      transform: translateZ(0);
+      animation: scanMove 9s linear infinite;
+    }
+    @keyframes gridDrift{
+      0%{ background-position: 0 0, 0 0; }
+      100%{ background-position: 120px 200px, 200px 120px; }
+    }
+    @keyframes scanMove{
+      0%{ background-position: 0 0; }
+      100%{ background-position: 0 140px; }
+    }
+
     a{ color:inherit; }
-    .wrap{ max-width: 980px; margin: 0 auto; padding: 14px 14px 120px; }
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 14px 14px 120px; position:relative; }
+    .wrap::before{
+      content:"";
+      position:absolute; inset:-80px -40px auto -40px;
+      height: 260px;
+      background:
+        radial-gradient(closest-side at 20% 30%, rgba(124,92,255,.22), transparent 70%),
+        radial-gradient(closest-side at 80% 40%, rgba(20,241,149,.18), transparent 70%);
+      filter: blur(12px);
+      opacity:.9;
+      pointer-events:none;
+      z-index:-1;
+    }
+
     .topbar{
       position:sticky; top:0; z-index:5;
       backdrop-filter: blur(10px);
@@ -37,8 +95,10 @@
     .pill{ padding:4px 8px; border-radius:999px; border:1px solid var(--bd); font-size:12px; color:var(--mut); background:rgba(255,255,255,.03); }
     .pill.cn{ border-color:rgba(20,241,149,.35); color:#bfffe8; }
     .pill.us{ border-color:rgba(124,92,255,.35); color:#d9d1ff; }
+
     .grid{ display:grid; gap:12px; }
     @media (min-width:860px){ .grid{ grid-template-columns: 1fr 1fr; } }
+
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
       border:1px solid var(--bd);
@@ -46,12 +106,11 @@
       padding:14px;
       box-shadow: 0 10px 40px rgba(0,0,0,.25);
     }
-    h1{ margin:0; font-size:16px; letter-spacing:.4px; }
-    h2{ margin:0 0 10px; font-size:14px; color: var(--mut); font-weight: 700; }
     h3{ margin:0 0 10px; font-size:16px; }
     .mut{ color: var(--mut); }
     .small{ font-size:12px; line-height: 1.45; }
     .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
     input, select, textarea{
       width:100%;
       padding:12px 12px;
@@ -63,6 +122,7 @@
       font-size:14px;
     }
     textarea{ min-height: 84px; resize: vertical; }
+
     button{
       border:1px solid var(--bd);
       background: rgba(255,255,255,.04);
@@ -81,6 +141,7 @@
     button.secondary{ background: rgba(255,255,255,.02); }
     button.danger{ background: rgba(255,77,109,.12); border-color: rgba(255,77,109,.25); }
     button:active{ transform: translateY(1px); }
+
     .list{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
     .li{
       border:1px solid var(--bd);
@@ -102,22 +163,27 @@
     .tag.good{ border-color: rgba(20,241,149,.35); color:#bfffe8; }
     .tag.bad{ border-color: rgba(255,77,109,.35); color:#ffd1da; }
     .tag.warn{ border-color: rgba(255,209,102,.35); color:#fff3c4; }
+
     .kpi{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
     .kpi .box{ flex:1 1 150px; border:1px solid var(--bd); border-radius:14px; padding:10px; background: rgba(255,255,255,.02); }
     .kpi .v{ font-size:18px; font-weight:900; }
     .kpi .l{ font-size:12px; color: var(--mut); }
+
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
     .scroll{ max-height: 360px; overflow:auto; -webkit-overflow-scrolling: touch; padding-right: 2px; }
     details summary{ cursor:pointer; padding:8px 0; color: var(--mut); font-weight:800; }
 
-    /* Modal / sheet */
+    /* Modal / sheet (scrollable) */
     .mask{
       position:fixed; inset:0; z-index:20;
       background: rgba(0,0,0,.55);
       display:none;
       padding: 16px;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
     }
     .mask.show{ display:block; }
+
     .sheet{
       max-width: 980px;
       margin: 0 auto;
@@ -126,14 +192,29 @@
       border-radius: 18px;
       box-shadow: 0 24px 80px rgba(0,0,0,.55);
       overflow:hidden;
+      max-height: calc(100vh - 32px);
+      display:flex;
+      flex-direction:column;
     }
     .sheetHead{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
       padding: 14px 14px;
       border-bottom: 1px solid var(--bd);
+      flex: 0 0 auto;
     }
-    .sheetBody{ padding: 14px; }
-    .sheetFoot{ padding: 14px; border-top:1px solid var(--bd); display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+    .sheetBody{
+      padding: 14px;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1 1 auto;
+    }
+    .sheetFoot{
+      padding: 14px; border-top:1px solid var(--bd);
+      display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+      flex: 0 0 auto;
+      background: linear-gradient(180deg, rgba(15,22,32,.55), rgba(15,22,32,.92));
+      position: sticky; bottom: 0;
+    }
     .xbtn{ width:42px; height:42px; border-radius: 14px; display:grid; place-items:center; }
 
     /* Floating guide button */
@@ -162,7 +243,7 @@
   <div class="topbar">
     <div class="inner">
       <div class="brand">
-        <div class="badge"><span style="opacity:.9">NEON QUANT</span> <span class="pill mono" id="buildTag">v2</span></div>
+        <div class="badge"><span style="opacity:.9">NEON QUANT</span> <span class="pill mono" id="buildTag">v3</span></div>
         <div class="badge small">移动端优先 · 数据驱动 · 不承诺收益</div>
       </div>
       <div class="row">
@@ -332,14 +413,12 @@ https://..."></textarea>
     </div>
   </div>
 
-  <!-- Floating Guide -->
   <div class="fab" onclick="openGuide()" role="button" aria-label="打开指标指南">
     <div class="dot"></div>
     <div style="font-weight:900;">指南</div>
     <div class="mut small">指标标签解释</div>
   </div>
 
-  <!-- Generic Sheet Modal -->
   <div id="mask" class="mask" onclick="closeSheet(event)">
     <div class="sheet" onclick="event.stopPropagation()">
       <div class="sheetHead">
@@ -355,12 +434,9 @@ https://..."></textarea>
   </div>
 
 <script>
-/* =========================
-   Storage
-========================= */
 const LS = {
   backend: "nq_backend",
-  positions: "nq_positions_v2",
+  positions: "nq_positions_v3",
   ai: "nq_ai",
   prompts: "nq_prompts",
   news: "nq_news",
@@ -370,37 +446,19 @@ const LS = {
   sectorCfg: "nq_sector_cfg",
   sectorCache: "nq_sector_cache"
 };
-
 const DEFAULT_BACKEND = (localStorage.getItem(LS.backend) || "").trim() || "http://localhost:3000";
-
 const $ = (id)=>document.getElementById(id);
-
-function safeJsonParse(s, fallback){
-  try{ return JSON.parse(s); }catch{ return fallback; }
-}
-
+function safeJsonParse(s, fallback){ try{ return JSON.parse(s); }catch{ return fallback; } }
 function fmtMoney(x){
   if (x==null || !isFinite(x)) return "-";
   const sign = x<0 ? "-" : "";
   const n = Math.abs(x);
   return sign + n.toLocaleString(undefined,{ maximumFractionDigits: 2 });
 }
-function fmtPct(x){
-  if (x==null || !isFinite(x)) return "-";
-  return (x>=0?"+":"") + (x*100).toFixed(2) + "%";
-}
-function clampStr(s, max=6000){
-  s = String(s||"");
-  if (s.length<=max) return s;
-  return s.slice(0,max) + "\n[...已截断...]";
-}
+function clampStr(s, max=6000){ s=String(s||""); return s.length<=max? s : s.slice(0,max)+"\n[...已截断...]"; }
 
-/* =========================
-   Init
-========================= */
 function init(){
   $("backend").value = localStorage.getItem(LS.backend) || DEFAULT_BACKEND;
-
   const ai = safeJsonParse(localStorage.getItem(LS.ai), {});
   $("aiBase").value = ai.baseUrl || "https://api.openai.com";
   $("aiKey").value = ai.apiKey || "";
@@ -433,20 +491,16 @@ function init(){
   ensurePrompts();
   ensureSectorCfg();
 
-  $("buildTag").textContent = "v2";
+  $("buildTag").textContent = "v3";
 }
 window.addEventListener("load", init);
 
-/* =========================
-   Defaults
-========================= */
 function defaultPositions(){
   return [
     { id: crypto.randomUUID(), type:"CN_FUND", code:"019449", name:"示例：恒生科技ETF联接", amount: 10000, cost: null },
     { id: crypto.randomUUID(), type:"US_TICKER", code:"QQQ", name:"示例：纳指100ETF", amount: 10000, cost: null },
   ];
 }
-
 function defaultSectorCfg(){
   return {
     sectors: [
@@ -463,7 +517,6 @@ function defaultSectorCfg(){
     ]
   };
 }
-
 function defaultPrompts(){
   return {
     analysisPrompt: `你是严谨的投研助理。\n\n【分析风格】\n- 先风险后机会；优先解释“不确定性”和“条件”。\n- 结论要可执行，但不允许承诺收益或确定性表述。\n- 明确区分：事实/数据 vs 推断/观点。\n\n【你要利用的数据】\n- 持仓（金额、盈亏、估值/净值时间）\n- 风控（集中度、单一持仓占比、地域/主题暴露等）\n- 技术指标（趋势/动量/RSI等标签）\n- 板块动向（各板块代表性ETF的趋势/动量/RSI）\n- 新闻（条目列表，含时间、来源、主题与情绪标签）\n\n【输出偏好】\n- 总结尽量短；必要时可加“展开解释”。`,
@@ -477,9 +530,6 @@ function defaultPrompts(){
   };
 }
 
-/* =========================
-   Backend
-========================= */
 function saveBackend(){
   const v = $("backend").value.trim();
   if (!v) return alert("请输入后端地址");
@@ -498,9 +548,6 @@ async function checkHealth(){
   }
 }
 
-/* =========================
-   AI Config
-========================= */
 function saveAI(){
   const cfg = {
     baseUrl: $("aiBase").value.trim(),
@@ -519,37 +566,25 @@ function clearAI(){
   $("aiCfgOut").textContent = "已清空。";
 }
 
-/* =========================
-   Positions
-========================= */
-function persistPositions(){
-  localStorage.setItem(LS.positions, JSON.stringify(window.positions));
-}
+function persistPositions(){ localStorage.setItem(LS.positions, JSON.stringify(window.positions)); }
+
 function renderPositions(){
   const box = $("posList");
   box.innerHTML = "";
   const totalMV = window.positions.reduce((s,p)=>s+(p.mv||p.amount||0),0);
   const totalPNL = window.positions.reduce((s,p)=>s+(p.pnl||0),0);
-  const totalCost = window.positions.reduce((s,p)=>s+(p.cost!=null ? p.cost*p.amount : 0),0);
-  const totalReturn = (totalCost>0) ? (totalPNL/totalCost) : null;
-
   $("kpiMV").textContent = fmtMoney(totalMV);
   $("kpiPNL").textContent = fmtMoney(totalPNL);
-  $("kpiPNLP").textContent = totalReturn==null ? "-" : (totalReturn>=0?"+":"") + (totalReturn*100).toFixed(2) + "%";
 
   for (const p of window.positions){
     const div = document.createElement("div");
     div.className = "li";
-
     const tags = [];
     if (p.type==="CN_FUND") tags.push(`<span class="pill cn">国内</span>`);
     if (p.type==="US_TICKER") tags.push(`<span class="pill us">美股</span>`);
     if (p._techTags?.length){
-      for (const t of p._techTags.slice(0,6)){
-        tags.push(`<span class="tag ${t.kind||""}">${t.text}</span>`);
-      }
+      for (const t of p._techTags.slice(0,6)) tags.push(`<span class="tag ${t.kind||""}">${t.text}</span>`);
     }
-
     div.innerHTML = `
       <div class="liHead">
         <div style="min-width: 0;">
@@ -558,14 +593,8 @@ function renderPositions(){
             <span class="tag">金额：${fmtMoney(p.amount)}</span>
             <span class="tag">市值：${fmtMoney(p.mv||p.amount)}</span>
             <span class="tag ${p.pnl<0?"bad":"good"}">盈亏：${fmtMoney(p.pnl||0)}</span>
-            <span class="tag">收益率：${p.pnlPct!=null ? (p.pnlPct>=0?"+":"") + (p.pnlPct*100).toFixed(2)+"%" : "-"}</span>
           </div>
           <div class="tags" style="margin-top:8px;">${tags.join("")}</div>
-          <div class="mut small" style="margin-top:8px;">
-            ${p._nav ? `净值：${p._nav}（${p._navDate||"-"}）` : ""}
-            ${p._estNav ? ` · 估值：${p._estNav}（${p._time||"-"} ${p._estPct!=null?` ${(p._estPct*100).toFixed(2)}%`:""}）` : ""}
-            ${p.price ? ` · 价格：${p.price}` : ""}
-          </div>
         </div>
         <div class="row" style="justify-content:flex-end;">
           <button class="secondary" onclick="editPos('${p.id}')">编辑</button>
@@ -607,25 +636,13 @@ function openPosEditor(pos){
     <button class="primary" onclick="savePosEditor('${p.id}')">保存</button>
   `;
   $("mask").classList.add("show");
-
   $("peType").value = p.type;
   $("peCode").value = p.code || "";
   $("peName").value = p.name || "";
   $("peAmount").value = p.amount || 0;
   $("peCost").value = (p.cost==null? "" : p.cost);
-
-  $("peType").addEventListener("change", ()=>{
-    const t = $("peType").value;
-    $("peHint").textContent = t==="CN_FUND"
-      ? "国内：请输入 6 位基金/ETF 代码（例如 513180）。"
-      : "海外：请输入 Ticker（例如 QQQ / NVDA / SPY）。";
-  });
 }
-function editPos(id){
-  const p = window.positions.find(x=>x.id===id);
-  if (!p) return;
-  openPosEditor(p);
-}
+function editPos(id){ const p = window.positions.find(x=>x.id===id); if(p) openPosEditor(p); }
 function delPos(id){
   if (!confirm("确定删除这条持仓？")) return;
   window.positions = window.positions.filter(x=>x.id!==id);
@@ -639,10 +656,8 @@ function savePosEditor(id){
   const amount = Number($("peAmount").value || 0);
   const costRaw = $("peCost").value;
   const cost = (costRaw==="" ? null : Number(costRaw));
-
   if (!code) return alert("请输入代码");
   if (!isFinite(amount) || amount<=0) return alert("请输入正确金额");
-
   if (type==="CN_FUND" && !/^\d{6}$/.test(code)) return alert("国内基金/ETF代码应为 6 位数字");
   if (type==="US_TICKER" && !/^[A-Z0-9\.-]{1,12}$/.test(code)) return alert("Ticker 格式不正确");
 
@@ -656,25 +671,15 @@ function savePosEditor(id){
   closeSheet();
 }
 
-/* =========================
-   Refresh NAV/Prices (simple)
-========================= */
 async function refreshAll(){
-  // 保守：只刷新“你已经实现的字段”——这里复用后端 tech 的价格能力（US tickers）
-  // 国内基金净值/估值可以按你的原逻辑继续接入；本 v2 不强依赖。
-  // 这里先做一个“市值=金额”的兜底 + 保留此前缓存字段。
   for (const p of window.positions){
     p.mv = p.amount;
-    p.pnl = (p.cost!=null && p.price!=null) ? (p.price-p.cost)*p.amount : (p.pnl||0);
-    p.pnlPct = (p.cost!=null && p.price!=null && p.cost>0) ? ((p.price-p.cost)/p.cost) : (p.pnlPct ?? null);
+    p.pnl = (p.pnl || 0);
   }
   persistPositions();
   renderPositions();
 }
 
-/* =========================
-   Risk
-========================= */
 async function refreshRisk(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const payload = window.positions.map(p=>({ type:p.type, code:p.code, name:p.name, amount:p.amount, mv:(p.mv||p.amount) }));
@@ -693,17 +698,12 @@ async function refreshRisk(){
     alert("风控接口不可用：" + (e?.message||e));
   }
 }
-
 function renderRisk(j){
   $("riskLevel").textContent = j.riskLevel || "-";
   $("riskSuggest").textContent = j.suggestTotalPct!=null ? `建议总仓位：${j.suggestTotalPct}%` : "建议总仓位：-";
   $("riskExplain").textContent = j.summary || "-";
   $("riskDetail").textContent = (j.details||[]).join("  ·  ") || "-";
 }
-
-/* =========================
-   Tech
-========================= */
 async function refreshTech(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const payload = window.positions.map(p=>({ type:p.type, code:p.code, name:p.name, amount:p.amount, mv:(p.mv||p.amount) }));
@@ -718,20 +718,17 @@ async function refreshTech(){
     localStorage.setItem(LS.techCache, JSON.stringify(j));
     window.techCache = j;
 
-    // merge into positions tags
     const byCode = new Map((j.items||[]).map(it=>[String(it.code||it.symbol||"").toUpperCase(), it]));
     for (const p of window.positions){
       const key = String(p.code||"").toUpperCase();
       const it = byCode.get(key);
       if (!it || !it.ok) { p._techTags = []; continue; }
       p._techTags = (it.tags||[]).map(t=>{
-        // normalize to {text, kind}
         const kind = (t.includes("偏热")||t.includes("过热")||t.includes("下行")||t.includes("转弱")) ? "warn"
                    : (t.includes("上行")||t.includes("转强")||t.includes("偏冷")||t.includes("超卖")) ? "good"
                    : "";
         return { text: t, kind };
       });
-      // also attach raw for AI if needed
       p._techRaw = it;
     }
     persistPositions();
@@ -741,9 +738,6 @@ async function refreshTech(){
   }
 }
 
-/* =========================
-   News
-========================= */
 function saveNewsConfig(){
   const cfg = {
     kwZh: $("kwZh").value.trim(),
@@ -755,17 +749,14 @@ function saveNewsConfig(){
   localStorage.setItem(LS.news, JSON.stringify(cfg));
   $("newsStatus").textContent = "✅ 已保存新闻配置。";
 }
-
 function clearNews(){
   localStorage.removeItem(LS.newsCache);
   $("newsList").innerHTML = "";
   $("newsStatus").textContent = "已清空。";
 }
-
 async function fetchNews(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const cfg = safeJsonParse(localStorage.getItem(LS.news), null) || (saveNewsConfig(), safeJsonParse(localStorage.getItem(LS.news), {}));
-
   const kwZh = (cfg.kwZh||"").trim();
   const kwEn = (cfg.kwEn||"").trim();
   if (!kwZh && !kwEn) return alert("至少填写中文或英文关键词之一");
@@ -793,7 +784,6 @@ async function fetchNews(){
     $("newsStatus").textContent = "❌ 抓取失败：" + (e?.message||e);
   }
 }
-
 function renderNews(items){
   const box = $("newsList");
   box.innerHTML = "";
@@ -829,29 +819,20 @@ function renderNews(items){
   }
 }
 
-/* =========================
-   Sectors
-========================= */
 let sectorScanCtrl = null;
-
 function ensureSectorCfg(){
   const cfg = safeJsonParse(localStorage.getItem(LS.sectorCfg), null);
   if (cfg && Array.isArray(cfg.sectors)) return;
   localStorage.setItem(LS.sectorCfg, JSON.stringify(defaultSectorCfg()));
 }
-
-function getSectorCfg(){
-  ensureSectorCfg();
-  return safeJsonParse(localStorage.getItem(LS.sectorCfg), defaultSectorCfg());
-}
+function getSectorCfg(){ ensureSectorCfg(); return safeJsonParse(localStorage.getItem(LS.sectorCfg), defaultSectorCfg()); }
 
 function openSectorManager(){
   const cfg = getSectorCfg();
   const body = document.createElement("div");
-
   body.innerHTML = `
     <div class="mut small">你可以删除默认板块，也可以新增。国内板块：通过“ETF 代码（6位）”添加；美股板块：通过“TICKER”添加。</div>
-    <div class="list" id="secMgrList" style="margin-top:12px;"></div>
+    <div id="secMgrList" class="scroll" style="margin-top:12px; max-height: 46vh;"></div>
     <hr style="border:0;border-top:1px solid var(--bd); margin:14px 0;">
     <div style="font-weight:900; margin-bottom:8px;">新增板块</div>
     <div class="row">
@@ -865,9 +846,8 @@ function openSectorManager(){
       <textarea id="secNewTickers" placeholder="代码列表（逗号分隔）\n国内：ETF 6位，如 513180,515220\n美股：Ticker，如 QQQ,XLK,SOXX"></textarea>
     </div>
   `;
-
   $("sheetTitle").textContent = "管理板块";
-  $("sheetSub").textContent = "支持删除/自定义添加，并显示国内/美股标签";
+  $("sheetSub").textContent = "✅ 现在支持滚动：板块再多也能管理";
   $("sheetBody").innerHTML = "";
   $("sheetBody").appendChild(body);
   $("sheetFoot").style.display = "flex";
@@ -876,12 +856,10 @@ function openSectorManager(){
     <button class="primary" onclick="saveNewSector()">添加</button>
   `;
   $("mask").classList.add("show");
-
   renderSectorMgrList(cfg);
 }
-
 function renderSectorMgrList(cfg){
-  const box = $("secMgrList");
+  const box = $("secMgrList"); if (!box) return;
   box.innerHTML = "";
   for (const s of cfg.sectors){
     const div = document.createElement("div");
@@ -902,17 +880,14 @@ function renderSectorMgrList(cfg){
     box.appendChild(div);
   }
 }
-
 function saveNewSector(){
   const name = $("secNewName").value.trim();
   const market = $("secNewMarket").value;
   const raw = $("secNewTickers").value.trim();
   if (!name) return alert("请输入板块名称");
   if (!raw) return alert("请输入代码列表");
-
   const parts = raw.split(/[,，\s]+/).map(s=>s.trim()).filter(Boolean);
   if (!parts.length) return alert("代码列表为空");
-
   let etfs=[], tickers=[];
   if (market==="CN"){
     etfs = parts.filter(x=>/^\d{6}$/.test(x));
@@ -921,16 +896,13 @@ function saveNewSector(){
     tickers = parts.map(x=>x.toUpperCase()).filter(x=>/^[A-Z0-9\.-]{1,12}$/.test(x));
     if (!tickers.length) return alert("美股板块必须至少包含一个合法 Ticker");
   }
-
   const cfg = getSectorCfg();
   cfg.sectors.unshift({ id: crypto.randomUUID(), name, market, etfs, tickers });
   localStorage.setItem(LS.sectorCfg, JSON.stringify(cfg));
   renderSectorMgrList(cfg);
-
   $("secNewName").value = "";
   $("secNewTickers").value = "";
 }
-
 function deleteSector(id){
   if (!confirm("确定删除这个板块？")) return;
   const cfg = getSectorCfg();
@@ -942,27 +914,14 @@ function deleteSector(id){
 async function refreshSectors(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const cfg = getSectorCfg();
-
-  // 再点一次：停止扫描
-  if (sectorScanCtrl) {
-    sectorScanCtrl.abort();
-    sectorScanCtrl = null;
-    $("sectorStatus").textContent = "已停止扫描。";
-    return;
-  }
-
+  if (sectorScanCtrl) { sectorScanCtrl.abort(); sectorScanCtrl=null; $("sectorStatus").textContent="已停止扫描。"; return; }
   $("sectorStatus").textContent = "扫描中…（再次点击可停止）";
   sectorScanCtrl = new AbortController();
-
-  // flatten items
   const items = [];
   for (const s of cfg.sectors){
     const codes = s.market==="CN" ? (s.etfs||[]) : (s.tickers||[]);
-    for (const sym of codes){
-      items.push({ theme: s.name, market: s.market, symbol: sym, name: null });
-    }
+    for (const sym of codes) items.push({ theme: s.name, market: s.market, symbol: sym, name: null });
   }
-
   try{
     const r = await fetch(`${base}/api/sector/scan`, {
       method:"POST",
@@ -973,34 +932,25 @@ async function refreshSectors(){
     const j = await r.json();
     sectorScanCtrl = null;
     if (!j.ok) return alert("板块扫描失败：" + (j.error||""));
-
     localStorage.setItem(LS.sectorCache, JSON.stringify(j));
     window.sectorCache = j;
     $("sectorStatus").textContent = `✅ 已更新：${j.items?.length||0} 条`;
     renderSectors();
   }catch(e){
-    if (String(e?.name||"").includes("Abort")) {
-      $("sectorStatus").textContent = "已停止。";
-      return;
-    }
+    if (String(e?.name||"").includes("Abort")) { $("sectorStatus").textContent="已停止。"; return; }
     sectorScanCtrl = null;
     $("sectorStatus").textContent = "❌ 扫描失败：" + (e?.message||e);
   }
 }
-
 function renderSectors(){
   const cache = window.sectorCache;
   const q = ($("sectorSearch").value||"").trim().toLowerCase();
-
   const items = (cache?.items||[]).filter(it=>{
     const s = `${it.theme||""} ${it.symbol||""} ${it.name||""}`.toLowerCase();
     return !q || s.includes(q);
   });
-
   const scored = items.map(it=>{
-    // simple score: trend up + momentum + rsi neutral
-    let score = 0;
-    const tags = it.tags||[];
+    let score=0; const tags = it.tags||[];
     if (tags.some(t=>t.includes("上行"))) score += 2;
     if (tags.some(t=>t.includes("动量强")||t.includes("转强"))) score += 2;
     if (tags.some(t=>t.includes("偏热")||t.includes("过热"))) score -= 1;
@@ -1009,34 +959,19 @@ function renderSectors(){
     return { ...it, _score: score };
   }).sort((a,b)=>b._score-a._score);
 
-  // Top list: top 8 unique themes
-  const topThemes = new Set();
-  const top = [];
+  const topThemes = new Set(); const top=[];
   for (const it of scored){
     if (topThemes.has(it.theme)) continue;
-    topThemes.add(it.theme);
-    top.push(it);
+    topThemes.add(it.theme); top.push(it);
     if (top.length>=8) break;
   }
-
-  $("sectorTop").innerHTML = "";
-  for (const it of top){
-    $("sectorTop").appendChild(renderSectorItem(it));
-  }
-
+  $("sectorTop").innerHTML = ""; for (const it of top) $("sectorTop").appendChild(renderSectorItem(it));
   $("sectorAll").innerHTML = "";
-  if (!scored.length){
-    $("sectorAll").innerHTML = `<div class="mut small">暂无板块数据。先点“🧭 扫描板块”。</div>`;
-    return;
-  }
-  for (const it of scored){
-    $("sectorAll").appendChild(renderSectorItem(it));
-  }
+  if (!scored.length){ $("sectorAll").innerHTML = `<div class="mut small">暂无板块数据。先点“🧭 扫描板块”。</div>`; return; }
+  for (const it of scored) $("sectorAll").appendChild(renderSectorItem(it));
 }
-
 function renderSectorItem(it){
-  const div = document.createElement("div");
-  div.className = "li";
+  const div = document.createElement("div"); div.className="li";
   const pill = (it.market==="CN") ? `<span class="pill cn">国内</span>` : `<span class="pill us">美股</span>`;
   const tags = (it.tags||[]).slice(0,6).map(t=>{
     const k = (t.includes("偏热")||t.includes("过热")||t.includes("下行")||t.includes("转弱")) ? "warn"
@@ -1044,7 +979,6 @@ function renderSectorItem(it){
             : "";
     return `<span class="tag ${k}">${escapeHtml(t)}</span>`;
   }).join("");
-
   div.innerHTML = `
     <div class="liHead">
       <div style="min-width:0;">
@@ -1058,34 +992,25 @@ function renderSectorItem(it){
   return div;
 }
 
-/* =========================
-   Prompts (3 layers)
-========================= */
 function ensurePrompts(){
   const p = safeJsonParse(localStorage.getItem(LS.prompts), null);
   if (p && p.analysisPrompt && p.taskPrompts) return;
   localStorage.setItem(LS.prompts, JSON.stringify(defaultPrompts()));
 }
-
 function openPromptManager(){
   ensurePrompts();
   const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
-
   const body = document.createElement("div");
   body.innerHTML = `
     <div class="li">
       <div class="liTitle">System Prompt（固定）</div>
-      <div class="mut small" style="margin-top:8px;">
-        System Prompt 固定在后端：安全边界、引用规则、不要编造、不要“保证收益”、输出格式要求等。这里不提供编辑入口（减少误操作）。
-      </div>
+      <div class="mut small" style="margin-top:8px;">System Prompt 固定在后端：安全边界、引用规则、不要编造、不要“保证收益”、输出格式要求等。</div>
     </div>
-
     <div class="li" style="margin-top:10px;">
       <div class="liTitle">Analysis Prompt（可编辑，常改）</div>
       <textarea id="pmAnalysis" style="margin-top:10px;"></textarea>
       <div class="mut small" style="margin-top:8px;">建议：用它调“风格/重点/框架/保守程度/输出长度”。</div>
     </div>
-
     <div class="li" style="margin-top:10px;">
       <div class="liTitle">Task Prompt（按模式切换）</div>
       <div class="row" style="margin-top:10px;">
@@ -1106,7 +1031,6 @@ function openPromptManager(){
       </div>
     </div>
   `;
-
   $("sheetTitle").textContent = "Prompt 管理";
   $("sheetSub").textContent = "三层 Prompt：System（固定）/Analysis（可编辑）/Task（按模式切换）";
   $("sheetBody").innerHTML = "";
@@ -1117,17 +1041,11 @@ function openPromptManager(){
     <button class="primary" onclick="pmSaveAll()">保存</button>
   `;
   $("mask").classList.add("show");
-
   $("pmAnalysis").value = p.analysisPrompt || "";
   $("pmTaskKey").value = $("taskMode").value || "pre";
   $("pmTaskText").value = p.taskPrompts[$("pmTaskKey").value] || "";
 }
-
-function pmLoadTask(){
-  const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
-  const k = $("pmTaskKey").value;
-  $("pmTaskText").value = p.taskPrompts[k] || "";
-}
+function pmLoadTask(){ const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts()); $("pmTaskText").value = p.taskPrompts[$("pmTaskKey").value] || ""; }
 function pmSaveTask(){
   const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
   const k = $("pmTaskKey").value;
@@ -1138,7 +1056,6 @@ function pmSaveTask(){
 function pmSaveAll(){
   const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
   p.analysisPrompt = $("pmAnalysis").value;
-  // do not auto overwrite all tasks; user manages with pmSaveTask; but we save current text too
   const k = $("pmTaskKey").value;
   p.taskPrompts[k] = $("pmTaskText").value;
   localStorage.setItem(LS.prompts, JSON.stringify(p));
@@ -1156,18 +1073,11 @@ async function pmCopy(){
   catch{ alert("复制失败，请手动复制。"); }
 }
 
-/* =========================
-   Run AI
-========================= */
 async function runAI(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
-
   const cfg = safeJsonParse(localStorage.getItem(LS.ai), {});
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("先配置 AI BaseUrl / Key / Model 并保存");
-
-  // make sure we have latest (best effort)
   await refreshAll();
-
   const prompts = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
   const mode = $("taskMode").value;
   const analysisPrompt = clampStr(prompts.analysisPrompt || "");
@@ -1175,19 +1085,16 @@ async function runAI(){
 
   const holdings = window.positions.map(p=>({
     type:p.type, code:p.code, name:p.name, amount:p.amount, cost:p.cost,
-    price:p.price, mv:(p.mv||p.amount), pnl:p.pnl, pnlPct:p.pnlPct,
-    nav:p._nav, navDate:p._navDate, estNav:p._estNav, estPct:p._estPct, time:p._time,
+    mv:(p.mv||p.amount), pnl:p.pnl,
     tech: p._techRaw || null,
     techTags: (p._techTags||[]).map(x=>x.text)
   }));
-
   const risk = safeJsonParse(localStorage.getItem(LS.riskCache), null);
   const tech = safeJsonParse(localStorage.getItem(LS.techCache), null);
   const sectors = safeJsonParse(localStorage.getItem(LS.sectorCache), null);
   const news = safeJsonParse(localStorage.getItem(LS.newsCache), null);
 
   $("aiOut").value = "生成中…";
-
   try{
     const r = await fetch(`${base}/api/ai/chat`, {
       method:"POST",
@@ -1220,62 +1127,33 @@ async function runAI(){
   }
 }
 
-/* =========================
-   Guide (Touch-friendly)
-========================= */
 function openGuide(){
   const body = document.createElement("div");
   body.innerHTML = `
     <div class="li">
       <div class="liTitle">这些标签代表什么？（给小白的快速解释）</div>
-      <div class="mut small" style="margin-top:8px;">
-        下面是“数学状态”，不是买卖指令。你可以把它当作：<b>温度计 + 方向盘</b>。
-      </div>
+      <div class="mut small" style="margin-top:8px;">下面是“数学状态”，不是买卖指令。你可以把它当作：<b>温度计 + 方向盘</b>。</div>
     </div>
-
     <details open style="margin-top:10px;">
       <summary>趋势：上行 / 下行</summary>
-      <div class="li">
-        <div class="mut small">
-          - <b>上行</b>：近期价格均线更偏多头，代表“方向向上”。<br>
-          - <b>下行</b>：均线更偏空头，代表“方向向下”。<br><br>
-          新手建议：<b>下行时更适合观察/分批</b>，避免一次性重仓；上行也不等于一定涨，只是“目前方向更强”。
-        </div>
-      </div>
+      <div class="li"><div class="mut small">
+        - <b>上行</b>：方向更强；<b>下行</b>：方向更弱。<br><br>
+        新手建议：下行时更适合<b>观察/分批</b>；上行也不等于一定涨。
+      </div></div>
     </details>
-
     <details style="margin-top:10px;">
       <summary>动量：动量强 / 转强 / 转弱</summary>
-      <div class="li">
-        <div class="mut small">
-          - <b>动量强/转强</b>：上涨“速度”更快，短期情绪更偏强。<br>
-          - <b>转弱</b>：上涨速度放缓，或下跌加速。<br><br>
-          新手建议：动量强时容易“追高”，更适合<b>小仓试探 + 设置条件</b>；转弱时更适合<b>耐心等待确认</b>。
-        </div>
-      </div>
+      <div class="li"><div class="mut small">
+        - <b>动量强/转强</b>：速度更快；<b>转弱</b>：速度放缓或下跌加速。<br><br>
+        新手建议：动量强更易追高→<b>小仓+分批</b>。
+      </div></div>
     </details>
-
     <details style="margin-top:10px;">
       <summary>RSI：偏热 / 偏冷 / 中性</summary>
-      <div class="li">
-        <div class="mut small">
-          - <b>偏热</b>：短期涨得有点快，回调概率上升（不等于马上跌）。<br>
-          - <b>偏冷/超卖</b>：短期跌得有点多，反弹概率上升（不等于马上涨）。<br><br>
-          新手建议：<b>偏热时更偏“观察/等回踩/分批”</b>；偏冷时也不要梭哈，建议<b>分批+设止损/风控</b>。
-        </div>
-      </div>
-    </details>
-
-    <details style="margin-top:10px;">
-      <summary>把标签用在“操作”上：一个最简单的口诀</summary>
-      <div class="li">
-        <div class="mut small">
-          ① <b>先看风险</b>（集中度/单一持仓占比）→ 决定“仓位大小”。<br>
-          ② <b>再看趋势</b>（上行/下行）→ 决定“买不买”。<br>
-          ③ <b>最后看RSI</b>（偏热/偏冷）→ 决定“怎么买”（一次性 vs 分批）。<br><br>
-          这只是入门框架，不构成投资建议。
-        </div>
-      </div>
+      <div class="li"><div class="mut small">
+        - <b>偏热</b>：短期涨太快，回撤概率上升；<b>偏冷/超卖</b>：短期跌太多，反弹概率上升。<br><br>
+        新手建议：<b>偏热→观察/等回踩/分批</b>；偏冷也不要梭哈。
+      </div></div>
     </details>
   `;
   $("sheetTitle").textContent = "指标指南";
@@ -1286,20 +1164,13 @@ function openGuide(){
   $("mask").classList.add("show");
 }
 
-/* =========================
-   Sheet helpers
-========================= */
 function closeSheet(evt){
   if (evt && evt.target && evt.target.id!=="mask") return;
   $("mask").classList.remove("show");
   $("sheetFoot").style.display = "none";
   $("sheetBody").innerHTML = "";
 }
-function openPosEditor(){ openPosEditor(null); } // keep old API name
 
-/* =========================
-   Utils
-========================= */
 function escapeHtml(s){
   s = String(s ?? "");
   return s.replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
