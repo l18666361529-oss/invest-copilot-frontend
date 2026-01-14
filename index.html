@@ -568,6 +568,9 @@ function init(){
   }
 }
 window.addEventListener("load", init);
+// 额外兜底：有些设备 load 事件前快速点击也会触发弹窗
+ensurePositions();
+
 
 function defaultPositions(){
   return [
@@ -647,7 +650,15 @@ function clearAI(){
 
 function persistPositions(){ localStorage.setItem(LS.positions, JSON.stringify(window.positions)); }
 
+function ensurePositions(){
+  // 防止“点保存没反应”：在页面尚未完成 init 或某处异常导致 window.positions 未初始化时兜底
+  if (!Array.isArray(window.positions)) {
+    window.positions = safeJsonParse(localStorage.getItem(LS.positions), defaultPositions());
+  }
+}
+
 function renderPositions(){
+  ensurePositions();
   const box = $("posList");
   box.innerHTML = "";
   const totalMV = window.positions.reduce((s,p)=>s+(p.mv||p.amount||0),0);
@@ -686,6 +697,7 @@ function renderPositions(){
 }
 
 function openPosEditor(pos){
+  ensurePositions();
   const p = pos || { id: uuid(), type:"CN_FUND", code:"", name:"", amount:0, cost:null };
   const body = document.createElement("div");
   body.innerHTML = `
@@ -724,8 +736,10 @@ function openPosEditor(pos){
   $("peAmount").value = p.amount || 0;
   $("peCost").value = (p.cost==null? "" : p.cost);
 }
-function editPos(id){ const p = window.positions.find(x=>x.id===id); if(p) openPosEditor(p); }
+function editPos(id){
+  ensurePositions(); const p = window.positions.find(x=>x.id===id); if(p) openPosEditor(p); }
 function delPos(id){
+  ensurePositions();
   if (!confirm("确定删除这条持仓？")) return;
   window.positions = window.positions.filter(x=>x.id!==id);
   persistPositions();
@@ -761,6 +775,7 @@ async function resolvePosName(){
 }
 
 async function savePosEditor(id){
+  ensurePositions();
   try{
     const type = $("peType").value;
     const code = ($("peCode").value || "").trim().toUpperCase();
@@ -795,6 +810,7 @@ async function savePosEditor(id){
 }
 
 async function refreshAll(){
+  ensurePositions();
   for (const p of window.positions){
     p.mv = p.amount;
     p.pnl = (p.pnl || 0);
@@ -804,6 +820,7 @@ async function refreshAll(){
 }
 
 async function refreshRisk(){
+  ensurePositions();
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const payload = window.positions.map(p=>({ type:p.type, code:p.code, name:p.name, amount:p.amount, mv:(p.mv||p.amount) }));
   $("riskExplain").textContent = "检查中…";
@@ -830,6 +847,7 @@ function renderRisk(j){
 }
 
 async function refreshTech(){
+  ensurePositions();
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const payload = window.positions.map(p=>({ type:p.type, code:p.code, name:p.name, amount:p.amount, mv:(p.mv||p.amount) }));
   try{
@@ -1218,6 +1236,7 @@ async function pmCopy(){
 }
 
 async function runAI(){
+  ensurePositions();
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const cfg = safeJsonParse(localStorage.getItem(LS.ai), {});
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("先配置 AI BaseUrl / Key / Model 并保存");
