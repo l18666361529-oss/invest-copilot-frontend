@@ -370,7 +370,7 @@
         </details>
 
         <div class="mut small" style="margin-top:10px;">
-          技术/风控仅用于“提示风险与状态”，不等于买卖建议；真正动作请结合你的目标、期限、回撤承受力。
+          技术/风控仅用于“提示风险与状态”，不等于买卖建议；真正动作请结合你的目标、期限、回撤承受力。\n          <br>📌 计算口径："金额"默认为你的投入金额；若填写"成本价/成本净值"，系统会用 份额=投入/成本 来估算当前市值与盈亏。
         </div>
       </div>
 
@@ -698,6 +698,11 @@ function renderPositions(){
             <span class="tag">金额：${fmtMoney(p.amount)}</span>
             <span class="tag">市值：${fmtMoney(p.mv||p.amount)}</span>
             <span class="tag ${p.pnl<0?"bad":"good"}">盈亏：${fmtMoney(p.pnl||0)}</span>
+            ${p._quote && (p._quote.nav || p._quote.price) ? `<span class="tag">最新：${escapeHtml(String((p._quote.nav ?? p._quote.price)))}</span>` : ``}
+            ${p._quote && p._quote.navDate ? `<span class="tag">日期：${escapeHtml(p._quote.navDate)}</span>` : ``}
+            ${p._quote && p._quote.est ? `<span class="tag warn">估值：${escapeHtml(String(p._quote.est))}</span>` : ``}
+            ${p._quote && p._quote.estTime ? `<span class="tag">估值时间：${escapeHtml(p._quote.estTime)}</span>` : ``}
+
           </div>
           <div class="tags" style="margin-top:8px;">${tags.join("")}</div>
         </div>
@@ -826,12 +831,55 @@ async function savePosEditor(id){
 
 async function refreshAll(){
   ensurePositions();
-  for (const p of window.positions){
-    p.mv = p.amount;
-    p.pnl = (p.pnl || 0);
+  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  toast("刷新净值/行情中…", 2000);
+
+  try{
+    const payload = window.positions.map(p=>({ type:p.type, code:p.code }));
+    const r = await fetch(`${base}/api/quote/batch`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ positions: payload })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || "quote failed");
+
+    const byCode = new Map((j.items||[]).map(it=>[String(it.code||"").toUpperCase(), it]));
+    for (const p of window.positions){
+      const it = byCode.get(String(p.code||"").toUpperCase());
+      if (!it || !it.ok) {
+        p._quote = null;
+        // 不改变 mv/pnl
+        continue;
+      }
+      p._quote = it;
+
+      // 用“投入金额(amount)”+“成本(cost)”推算份额，再用最新净值/价格算当前市值
+      // 解释：用户是金额口径，所以如果有 cost，则份额=amount/cost；当前市值=份额*最新价格；盈亏=市值-投入
+      const px = Number(it.price ?? it.nav ?? it.dwjz ?? it.gsz);
+      if (isFinite(px) && isFinite(Number(p.amount)) && Number(p.amount) > 0) {
+        if (p.cost != null && isFinite(Number(p.cost)) && Number(p.cost) > 0) {
+          const shares = Number(p.amount) / Number(p.cost);
+          p.mv = shares * px;
+          p.pnl = p.mv - Number(p.amount);
+        } else {
+          // 没有成本：无法计算盈亏，只展示价格/净值；市值沿用投入金额
+          p.mv = Number(p.amount);
+          p.pnl = p.pnl ?? 0;
+        }
+      }
+      // 若名称为空，顺便用 quote 补一下
+      if (!p.name && it.name) p.name = it.name;
+    }
+
+    persistPositions();
+    renderPositions();
+    toast("已刷新净值/行情");
+  }catch(e){
+    console.error(e);
+    toast("刷新失败：检查后端地址/网络", 2400);
+    alert("刷新失败：" + (e?.message || e));
   }
-  persistPositions();
-  renderPositions();
 }
 
 async function refreshRisk(){
