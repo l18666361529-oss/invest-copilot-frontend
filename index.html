@@ -338,6 +338,7 @@
         <div class="row">
           <button class="primary" onclick="openPosEditor()">➕ 添加持仓</button>
           <button class="secondary" onclick="refreshAll()">🔄 刷新行情/净值</button>
+          <button class="secondary" onclick="refreshAll(true)">⚡ 强制刷新</button>
           <button class="danger" onclick="resetPositions()">🧨 重置持仓</button>
           <button class="secondary" onclick="refreshRisk()">🛡 风控检查</button>
           <button class="secondary" onclick="refreshTech()">📈 技术指标</button>
@@ -525,6 +526,18 @@ function toast(msg, ms=1800){
   el.classList.add("show");
   clearTimeout(window.__toastT);
   window.__toastT = setTimeout(()=>el.classList.remove("show"), ms);
+}
+
+function sleep(ms, signal){
+  return new Promise((resolve, reject)=>{
+    const t = setTimeout(()=>resolve(), ms);
+    if (signal){
+      signal.addEventListener("abort", ()=>{
+        clearTimeout(t);
+        reject(new DOMException("Aborted", "AbortError"));
+      }, { once:true });
+    }
+  });
 }
 
 function init(){
@@ -829,7 +842,7 @@ async function savePosEditor(id){
   }
 }
 
-async function refreshAll(){
+async function refreshAll(force=false){
   ensurePositions();
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   toast("刷新净值/行情中…", 2000);
@@ -839,7 +852,7 @@ async function refreshAll(){
     const r = await fetch(`${base}/api/quote/batch`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload })
+      body: JSON.stringify({ positions: payload, force: !!force })
     });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || "quote failed");
@@ -891,7 +904,7 @@ async function refreshRisk(){
     const r = await fetch(`${base}/api/risk/check`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload })
+      body: JSON.stringify({ positions: payload, force: !!force })
     });
     const j = await r.json();
     if (!j.ok) return alert("风控检查失败：" + (j.error||""));
@@ -917,7 +930,7 @@ async function refreshTech(){
     const r = await fetch(`${base}/api/tech/batch`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload })
+      body: JSON.stringify({ positions: payload, force: !!force })
     });
     const j = await r.json();
     if (!j.ok) return alert("技术指标失败：" + (j.error||""));
@@ -1134,39 +1147,97 @@ function deleteSector(id){
 }
 
 async function refreshSectors(){
+  ensurePositions();
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const cfg = getSectorCfg();
-  if (sectorScanCtrl) { sectorScanCtrl.abort(); sectorScanCtrl=null; $("sectorStatus").textContent="已停止扫描。"; toast("已停止"); return; }
-  $("sectorStatus").textContent = "扫描中…（再次点击可停止）";
-  toast("扫描板块中…", 2000);
-  sectorScanCtrl = new AbortController();
-  const items = [];
-  for (const s of cfg.sectors){
-    const codes = s.market==="CN" ? (s.etfs||[]) : (s.tickers||[]);
-    for (const sym of codes) items.push({ theme: s.name, market: s.market, symbol: sym, name: null });
+
+  // 再次点击：停止
+  if (sectorScanCtrl) {
+    sectorScanCtrl.abort();
+    sectorScanCtrl = null;
+    $("sectorStatus").textContent = "已停止扫描。";
+    toast("已停止");
+    return;
   }
+
+  // 顺序扫描：每次只扫一个板块（板块内可含多个代表ETF/Ticker）
+  sectorScanCtrl = new AbortController();
+  const signal = sectorScanCtrl.signal;
+
+  // 读取旧缓存，边扫边更新（避免一次全扫失败导致空白）
+  const prev = safeJsonParse(localStorage.getItem(LS.sectorCache), null);
+  const mergedMap = new Map();
+  if (prev && prev.ok && Array.isArray(prev.items)) {
+    for (const it of prev.items) {
+      const key = `${it.theme||""}||${it.symbol||""}`;
+      mergedMap.set(key, it);
+    }
+  }
+
+  const total = cfg.sectors.length;
+  let done = 0;
+
+  $("sectorStatus").textContent = `扫描中… 0/${total}（再次点击可停止）`;
+  toast("顺序扫描板块中…", 2200);
+
   try{
-    const r = await fetch(`${base}/api/sector/scan`, {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ items }),
-      signal: sectorScanCtrl.signal
-    });
-    const j = await r.json();
-    sectorScanCtrl = null;
-    if (!j.ok) return alert("板块扫描失败：" + (j.error||""));
-    localStorage.setItem(LS.sectorCache, JSON.stringify(j));
-    window.sectorCache = j;
-    $("sectorStatus").textContent = `✅ 已更新：${j.items?.length||0} 条`;
-    renderSectors();
-    toast("板块已更新");
+    for (const s of cfg.sectors){
+      if (signal.aborted) throw new DOMException("Aborted","AbortError");
+
+      const codes = s.market==="CN" ? (s.etfs||[]) : (s.tickers||[]);
+      const items = codes.map(sym => ({ theme: s.name, market: s.market, symbol: sym, name: null }));
+
+      // 空板块跳过
+      if (!items.length){
+        done += 1;
+        $("sectorStatus").textContent = `扫描中… ${done}/${total}（跳过空板块）`;
+        continue;
+      }
+
+      $("sectorStatus").textContent = `扫描中… ${done+1}/${total}  当前：${s.name}`;
+      // 调用后端：只扫描当前板块
+      const r = await fetch(`${base}/api/sector/scan`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ items }),
+        signal
+      });
+      const j = await r.json();
+      if (j && j.ok && Array.isArray(j.items)){
+        for (const it of j.items){
+          const key = `${it.theme||""}||${it.symbol||""}`;
+          mergedMap.set(key, it);
+        }
+        // 边扫边落盘 + 渲染（让你看到逐步出结果）
+        const merged = { ok:true, build: j.build, items: Array.from(mergedMap.values()) };
+        localStorage.setItem(LS.sectorCache, JSON.stringify(merged));
+        window.sectorCache = merged;
+        renderSectors();
+      }
+
+      done += 1;
+      $("sectorStatus").textContent = `扫描中… ${done}/${total}  已更新：${mergedMap.size} 条`;
+
+      // 随机间隔 5-10 秒，降低被数据源限流概率（美股接口尤其容易限流）
+      const waitMs = (5000 + Math.floor(Math.random()*5000));
+      await sleep(waitMs, signal);
+    }
+
+    $("sectorStatus").textContent = `✅ 扫描完成：${mergedMap.size} 条`;
+    toast("板块扫描完成");
   }catch(e){
-    if (String(e?.name||"").includes("Abort")) { $("sectorStatus").textContent="已停止。"; return; }
-    sectorScanCtrl = null;
+    if (String(e?.name||"").includes("Abort")) {
+      $("sectorStatus").textContent = "已停止。";
+      return;
+    }
+    console.error(e);
     $("sectorStatus").textContent = "❌ 扫描失败：" + (e?.message||e);
     toast("扫描失败", 2200);
+  }finally{
+    sectorScanCtrl = null;
   }
 }
+
 function renderSectors(){
   const cache = window.sectorCache;
   const q = ($("sectorSearch").value||"").trim().toLowerCase();
