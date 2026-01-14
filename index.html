@@ -338,6 +338,7 @@
         <div class="row">
           <button class="primary" onclick="openPosEditor()">➕ 添加持仓</button>
           <button class="secondary" onclick="refreshAll()">🔄 刷新行情/净值</button>
+          <button class="danger" onclick="resetPositions()">🧨 重置持仓</button>
           <button class="secondary" onclick="refreshRisk()">🛡 风控检查</button>
           <button class="secondary" onclick="refreshTech()">📈 技术指标</button>
         </div>
@@ -543,7 +544,7 @@ function init(){
     $("newsLimit").value = news.limit || 18;
     $("rssCustom").value = (news.customRss || []).join("\n");
 
-    window.positions = safeJsonParse(localStorage.getItem(LS.positions), defaultPositions());
+    window.positions = loadPositions();
     renderPositions();
 
     const risk = safeJsonParse(localStorage.getItem(LS.riskCache), null);
@@ -650,11 +651,26 @@ function clearAI(){
 
 function persistPositions(){ localStorage.setItem(LS.positions, JSON.stringify(window.positions)); }
 
+function resetPositions(){
+  if (!confirm("这会清空本机浏览器里的持仓数据并恢复默认示例。确定继续？")) return;
+  window.positions = defaultPositions();
+  localStorage.setItem(LS.positions, JSON.stringify(window.positions));
+  renderPositions();
+  toast("已重置持仓（本机）");
+}
+
+function loadPositions(){
+  const v = safeJsonParse(localStorage.getItem(LS.positions), null);
+  return Array.isArray(v) ? v : defaultPositions();
+}
 function ensurePositions(){
-  // 防止“点保存没反应”：在页面尚未完成 init 或某处异常导致 window.positions 未初始化时兜底
+  // 防止 window.positions 为 undefined / null / 非数组（localStorage 可能被旧版本写成 "null"）
   if (!Array.isArray(window.positions)) {
-    window.positions = safeJsonParse(localStorage.getItem(LS.positions), defaultPositions());
+    window.positions = loadPositions();
+    // 若缓存损坏，顺手修复存储，避免下次再报错
+    localStorage.setItem(LS.positions, JSON.stringify(window.positions));
   }
+}
 }
 
 function renderPositions(){
