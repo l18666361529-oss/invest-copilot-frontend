@@ -696,6 +696,14 @@ function clearAI(){
 
 function persistPositions(){ storage.set(LS.positions, JSON.stringify(window.positions)); }
 
+function resetSectorCfg(){
+  if (!confirm("这会把板块列表恢复为默认示例（仅影响本机浏览器）。确定继续？")) return;
+  const cfg = defaultSectorCfg();
+  storage.set(LS.sectorCfg, JSON.stringify(cfg));
+  renderSectorMgrList(cfg);
+  toast("已重置板块");
+}
+
 function clearSectorCache(){
   storage.remove(LS.sectorCache);
   window.sectorCache = null;
@@ -1098,7 +1106,23 @@ function ensureSectorCfg(){
   if (cfg && Array.isArray(cfg.sectors)) return;
   storage.set(LS.sectorCfg, JSON.stringify(defaultSectorCfg()));
 }
-function getSectorCfg(){ ensureSectorCfg(); return safeJsonParse(storage.get(LS.sectorCfg), defaultSectorCfg()); }
+function getSectorCfg(){
+  // localStorage 可能被旧版本写成 "null" / 非法结构，这里强制修复
+  let cfg = safeJsonParse(storage.get(LS.sectorCfg), null);
+  if (!cfg || typeof cfg !== "object" || !Array.isArray(cfg.sectors)) {
+    cfg = defaultSectorCfg();
+    storage.set(LS.sectorCfg, JSON.stringify(cfg));
+  }
+  // 规范字段
+  cfg.sectors = cfg.sectors.map(s=>({
+    id: s.id || uuid(),
+    name: String(s.name||"").trim() || "未命名板块",
+    market: s.market==="CN" ? "CN" : "US",
+    etfs: Array.isArray(s.etfs) ? s.etfs.filter(x=>/^\d{6}$/.test(String(x))) : [],
+    tickers: Array.isArray(s.tickers) ? s.tickers.map(x=>String(x).toUpperCase()).filter(x=>/^[A-Z0-9\.-]{1,12}$/.test(x)) : [],
+  }));
+  return cfg;
+}
 
 function openSectorManager(){
   const cfg = getSectorCfg();
