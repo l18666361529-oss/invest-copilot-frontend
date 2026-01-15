@@ -1006,17 +1006,21 @@ async function refreshTech(){
   }
 }
 
-function saveNewsConfig(){
+function saveNewsConfig(silent=false){
   const cfg = {
-    kwZh: $("kwZh").value.trim(),
-    kwEn: $("kwEn").value.trim(),
-    preset: $("newsSourcePreset").value,
-    limit: Math.max(5, Math.min(50, Number($("newsLimit").value||18))),
-    customRss: $("rssCustom").value.split(/\n+/).map(s=>s.trim()).filter(Boolean)
+    kwZh: $("kwZh")?.value?.trim() || "",
+    kwEn: $("kwEn")?.value?.trim() || "",
+    preset: $("newsSourcePreset")?.value || "mix",
+    limit: Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18))),
+    customRss: ($("rssCustom")?.value || "").split(/
++/).map(s=>s.trim()).filter(Boolean)
   };
   storage.set(LS.news, JSON.stringify(cfg));
-  $("newsStatus").textContent = "✅ 已保存新闻配置。";
-  toast("已保存新闻配置");
+  if (!silent){
+    if ($("newsStatus")) $("newsStatus").textContent = "✅ 已保存新闻配置。";
+    toast("已保存新闻配置");
+  }
+  return cfg;
 }
 function clearNews(){
   storage.remove(LS.newsCache);
@@ -1026,7 +1030,7 @@ function clearNews(){
 }
 async function fetchNews(){
   const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
-  const cfg = safeJsonParse(storage.get(LS.news), null) || (saveNewsConfig(), safeJsonParse(storage.get(LS.news), {}));
+  const cfg = safeJsonParse(storage.get(LS.news), null) || saveNewsConfig(true);
   const kwZh = (cfg.kwZh||"").trim();
   const kwEn = (cfg.kwEn||"").trim();
   if (!kwZh && !kwEn) return alert("至少填写中文或英文关键词之一");
