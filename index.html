@@ -664,6 +664,14 @@ function clearAI(){
 
 function persistPositions(){ localStorage.setItem(LS.positions, JSON.stringify(window.positions)); }
 
+function clearSectorCache(){
+  localStorage.removeItem(LS.sectorCache);
+  window.sectorCache = null;
+  $("sectorStatus").textContent = "已清空缓存。";
+  renderSectors();
+  toast("已清空板块缓存");
+}
+
 function resetPositions(){
   if (!confirm("这会清空本机浏览器里的持仓数据并恢复默认示例。确定继续？")) return;
   window.positions = defaultPositions();
@@ -1151,7 +1159,6 @@ async function refreshSectors(){
   const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const cfg = getSectorCfg();
 
-  // 再次点击：停止
   if (sectorScanCtrl) {
     sectorScanCtrl.abort();
     sectorScanCtrl = null;
@@ -1160,11 +1167,23 @@ async function refreshSectors(){
     return;
   }
 
-  // 顺序扫描：每次只扫一个板块（板块内可含多个代表ETF/Ticker）
+  const queue = [];
+  for (const s of cfg.sectors){
+    const codes = s.market==="CN" ? (s.etfs||[]) : (s.tickers||[]);
+    for (const sym of codes){
+      queue.push({ theme: s.name, market: s.market, symbol: sym });
+    }
+  }
+
+  if (!queue.length){
+    $("sectorStatus").textContent = "没有可扫描的板块标的。";
+    toast("没有可扫描的板块标的");
+    return;
+  }
+
   sectorScanCtrl = new AbortController();
   const signal = sectorScanCtrl.signal;
 
-  // 读取旧缓存，边扫边更新（避免一次全扫失败导致空白）
   const prev = safeJsonParse(localStorage.getItem(LS.sectorCache), null);
   const mergedMap = new Map();
   if (prev && prev.ok && Array.isArray(prev.items)) {
@@ -1174,41 +1193,31 @@ async function refreshSectors(){
     }
   }
 
-  const total = cfg.sectors.length;
+  const total = queue.length;
   let done = 0;
 
   $("sectorStatus").textContent = `扫描中… 0/${total}（再次点击可停止）`;
-  toast("顺序扫描板块中…", 2200);
+  toast("顺序扫描中…", 2200);
 
   try{
-    for (const s of cfg.sectors){
+    for (const q of queue){
       if (signal.aborted) throw new DOMException("Aborted","AbortError");
 
-      const codes = s.market==="CN" ? (s.etfs||[]) : (s.tickers||[]);
-      const items = codes.map(sym => ({ theme: s.name, market: s.market, symbol: sym, name: null }));
+      $("sectorStatus").textContent = `扫描中… ${done+1}/${total}  当前：${q.theme} (${q.symbol})`;
 
-      // 空板块跳过
-      if (!items.length){
-        done += 1;
-        $("sectorStatus").textContent = `扫描中… ${done}/${total}（跳过空板块）`;
-        continue;
-      }
-
-      $("sectorStatus").textContent = `扫描中… ${done+1}/${total}  当前：${s.name}`;
-      // 调用后端：只扫描当前板块
       const r = await fetch(`${base}/api/sector/scan`, {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items: [ { theme: q.theme, market: q.market, symbol: q.symbol, name: null } ] }),
         signal
       });
       const j = await r.json();
-      if (j && j.ok && Array.isArray(j.items)){
-        for (const it of j.items){
-          const key = `${it.theme||""}||${it.symbol||""}`;
-          mergedMap.set(key, it);
-        }
-        // 边扫边落盘 + 渲染（让你看到逐步出结果）
+
+      if (j && j.ok && Array.isArray(j.items) && j.items.length){
+        const it = j.items[0];
+        const key = `${it.theme||""}||${it.symbol||""}`;
+        mergedMap.set(key, it);
+
         const merged = { ok:true, build: j.build, items: Array.from(mergedMap.values()) };
         localStorage.setItem(LS.sectorCache, JSON.stringify(merged));
         window.sectorCache = merged;
@@ -1218,8 +1227,7 @@ async function refreshSectors(){
       done += 1;
       $("sectorStatus").textContent = `扫描中… ${done}/${total}  已更新：${mergedMap.size} 条`;
 
-      // 随机间隔 5-10 秒，降低被数据源限流概率（美股接口尤其容易限流）
-      const waitMs = (5000 + Math.floor(Math.random()*5000));
+      const waitMs = 5000 + Math.floor(Math.random()*5000);
       await sleep(waitMs, signal);
     }
 
