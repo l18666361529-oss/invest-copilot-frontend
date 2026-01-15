@@ -485,6 +485,20 @@
 4) 背景：增强霓虹光效（额外 glow layers）
 */
 
+// Safe storage: some mobile/in-app browsers may block localStorage (SecurityError/QuotaExceeded)
+const storage = {
+  ok: true,
+  get(key){
+    try { return storage.get(key); } catch(e){ this.ok = false; return null; }
+  },
+  set(key, val){
+    try { storage.set(key, val); return true; } catch(e){ this.ok = false; return false; }
+  },
+  remove(key){
+    try { storage.remove(key); return true; } catch(e){ this.ok = false; return false; }
+  }
+};
+
 const LS = {
   backend: "nq_backend",
   positions: "nq_positions_v4",
@@ -497,7 +511,7 @@ const LS = {
   sectorCfg: "nq_sector_cfg",
   sectorCache: "nq_sector_cache"
 };
-const DEFAULT_BACKEND = (localStorage.getItem(LS.backend) || "").trim() || "http://localhost:3000";
+const DEFAULT_BACKEND = (storage.get(LS.backend) || "").trim() || "http://localhost:3000";
 const $ = (id)=>document.getElementById(id);
 
 function setVal(id, val){
@@ -557,16 +571,18 @@ function sleep(ms, signal){
 }
 
 function init(){
+  // Storage warning (if any)
+
   try{
-    setVal("backend", localStorage.getItem(LS.backend) || DEFAULT_BACKEND);
-    const ai = safeJsonParse(localStorage.getItem(LS.ai), {});
+    setVal("backend", storage.get(LS.backend) || DEFAULT_BACKEND);
+    const ai = safeJsonParse(storage.get(LS.ai), {});
     setVal("aiBase", ai.baseUrl || "https://api.openai.com");
     setVal("aiKey", ai.apiKey || "");
     setVal("aiModel", ai.model || "");
     setVal("outLang", ai.outLang || "zh");
     $("aiCfgOut").textContent = ai.model ? "✅ 已加载本机 AI 配置" : "未配置。";
 
-    const news = safeJsonParse(localStorage.getItem(LS.news), {});
+    const news = safeJsonParse(storage.get(LS.news), {});
     setVal("kwZh", news.kwZh || "");
     setVal("kwEn", news.kwEn || "");
     $("newsSourcePreset").value = news.preset || "mixed";
@@ -576,16 +592,16 @@ function init(){
     window.positions = loadPositions();
     renderPositions();
 
-    const risk = safeJsonParse(localStorage.getItem(LS.riskCache), null);
+    const risk = safeJsonParse(storage.get(LS.riskCache), null);
     if (risk && risk.ok) renderRisk(risk);
 
-    const tech = safeJsonParse(localStorage.getItem(LS.techCache), null);
+    const tech = safeJsonParse(storage.get(LS.techCache), null);
     if (tech && tech.ok) window.techCache = tech;
 
-    const sectors = safeJsonParse(localStorage.getItem(LS.sectorCache), null);
+    const sectors = safeJsonParse(storage.get(LS.sectorCache), null);
     if (sectors && sectors.ok) { window.sectorCache = sectors; renderSectors(); }
 
-    const newsCache = safeJsonParse(localStorage.getItem(LS.newsCache), null);
+    const newsCache = safeJsonParse(storage.get(LS.newsCache), null);
     if (newsCache && newsCache.ok) renderNews(newsCache.items||[], newsCache);
 
     ensurePrompts();
@@ -640,12 +656,12 @@ function defaultPrompts(){
 function saveBackend(){
   const v = $("backend").value.trim();
   if (!v) return alert("请输入后端地址");
-  localStorage.setItem(LS.backend, v);
+  storage.set(LS.backend, v);
   $("healthOut").textContent = "✅ 已保存。";
   toast("已保存后端地址");
 }
 async function checkHealth(){
-  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   $("healthOut").textContent = "检查中…";
   try{
     const r = await fetch(`${base}/health`);
@@ -666,22 +682,22 @@ function saveAI(){
     outLang: $("outLang").value
   };
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("请填写 BaseUrl / Key / Model");
-  localStorage.setItem(LS.ai, JSON.stringify(cfg));
+  storage.set(LS.ai, JSON.stringify(cfg));
   $("aiCfgOut").textContent = "✅ AI 配置已保存（仅本机浏览器）。";
   toast("AI 配置已保存");
 }
 function clearAI(){
-  localStorage.removeItem(LS.ai);
+  storage.remove(LS.ai);
   setVal("aiKey", "");
   setVal("aiModel", "");
   $("aiCfgOut").textContent = "已清空。";
   toast("已清空 AI 配置");
 }
 
-function persistPositions(){ localStorage.setItem(LS.positions, JSON.stringify(window.positions)); }
+function persistPositions(){ storage.set(LS.positions, JSON.stringify(window.positions)); }
 
 function clearSectorCache(){
-  localStorage.removeItem(LS.sectorCache);
+  storage.remove(LS.sectorCache);
   window.sectorCache = null;
   $("sectorStatus").textContent = "已清空缓存。";
   renderSectors();
@@ -691,13 +707,13 @@ function clearSectorCache(){
 function resetPositions(){
   if (!confirm("这会清空本机浏览器里的持仓数据并恢复默认示例。确定继续？")) return;
   window.positions = defaultPositions();
-  localStorage.setItem(LS.positions, JSON.stringify(window.positions));
+  storage.set(LS.positions, JSON.stringify(window.positions));
   renderPositions();
   toast("已重置持仓（本机）");
 }
 
 function loadPositions(){
-  const v = safeJsonParse(localStorage.getItem(LS.positions), null);
+  const v = safeJsonParse(storage.get(LS.positions), null);
   return Array.isArray(v) ? v : defaultPositions();
 }
 function ensurePositions(){
@@ -705,7 +721,7 @@ function ensurePositions(){
   if (!Array.isArray(window.positions)) {
     window.positions = loadPositions();
     // 若缓存损坏，顺手修复存储，避免下次再报错
-    localStorage.setItem(LS.positions, JSON.stringify(window.positions));
+    storage.set(LS.positions, JSON.stringify(window.positions));
   }
 }
 
@@ -806,7 +822,7 @@ function delPos(id){
 
 // 自动解析名称
 async function resolvePosName(){
-  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const type = $("peType").value;
   const code = ($("peCode").value || "").trim().toUpperCase();
   if (!code) return toast("先输入代码");
@@ -868,7 +884,7 @@ async function savePosEditor(id){
 
 async function refreshAll(force=false){
   ensurePositions();
-  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   toast("刷新净值/行情中…", 2000);
 
   try{
@@ -921,7 +937,7 @@ async function refreshAll(force=false){
 
 async function refreshRisk(){
   ensurePositions();
-  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const payload = window.positions.map(p=>({ type:p.type, code:p.code, name:p.name, amount:p.amount, mv:(p.mv||p.amount) }));
   $("riskExplain").textContent = "检查中…";
   try{
@@ -932,7 +948,7 @@ async function refreshRisk(){
     });
     const j = await r.json();
     if (!j.ok) return alert("风控检查失败：" + (j.error||""));
-    localStorage.setItem(LS.riskCache, JSON.stringify(j));
+    storage.set(LS.riskCache, JSON.stringify(j));
     renderRisk(j);
     toast("风控已更新");
   }catch(e){
@@ -948,7 +964,7 @@ function renderRisk(j){
 
 async function refreshTech(){
   ensurePositions();
-  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const payload = window.positions.map(p=>({ type:p.type, code:p.code, name:p.name, amount:p.amount, mv:(p.mv||p.amount) }));
   try{
     const r = await fetch(`${base}/api/tech/batch`, {
@@ -958,7 +974,7 @@ async function refreshTech(){
     });
     const j = await r.json();
     if (!j.ok) return alert("技术指标失败：" + (j.error||""));
-    localStorage.setItem(LS.techCache, JSON.stringify(j));
+    storage.set(LS.techCache, JSON.stringify(j));
     window.techCache = j;
 
     const byCode = new Map((j.items||[]).map(it=>[String(it.code||it.symbol||"").toUpperCase(), it]));
@@ -990,19 +1006,19 @@ function saveNewsConfig(){
     limit: Math.max(5, Math.min(50, Number($("newsLimit").value||18))),
     customRss: $("rssCustom").value.split(/\n+/).map(s=>s.trim()).filter(Boolean)
   };
-  localStorage.setItem(LS.news, JSON.stringify(cfg));
+  storage.set(LS.news, JSON.stringify(cfg));
   $("newsStatus").textContent = "✅ 已保存新闻配置。";
   toast("已保存新闻配置");
 }
 function clearNews(){
-  localStorage.removeItem(LS.newsCache);
+  storage.remove(LS.newsCache);
   $("newsList").innerHTML = "";
   $("newsStatus").textContent = "已清空。";
   toast("已清空新闻");
 }
 async function fetchNews(){
-  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
-  const cfg = safeJsonParse(localStorage.getItem(LS.news), null) || (saveNewsConfig(), safeJsonParse(localStorage.getItem(LS.news), {}));
+  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  const cfg = safeJsonParse(storage.get(LS.news), null) || (saveNewsConfig(), safeJsonParse(storage.get(LS.news), {}));
   const kwZh = (cfg.kwZh||"").trim();
   const kwEn = (cfg.kwEn||"").trim();
   if (!kwZh && !kwEn) return alert("至少填写中文或英文关键词之一");
@@ -1024,7 +1040,7 @@ async function fetchNews(){
     });
     const j = await r.json();
     if (!j.ok) return alert("抓取新闻失败：" + (j.error||""));
-    localStorage.setItem(LS.newsCache, JSON.stringify(j));
+    storage.set(LS.newsCache, JSON.stringify(j));
     const hit = j.matched ?? (j.items?.length||0);
     $("newsStatus").textContent = j.fallback ? `⚠️ 关键词命中0条，已回退显示最新要闻（${j.items?.length||0}条）` : `✅ 获取 ${j.items?.length||0} 条`;
     renderNews(j.items||[], j);
@@ -1078,11 +1094,11 @@ function renderNews(items, meta){
 
 let sectorScanCtrl = null;
 function ensureSectorCfg(){
-  const cfg = safeJsonParse(localStorage.getItem(LS.sectorCfg), null);
+  const cfg = safeJsonParse(storage.get(LS.sectorCfg), null);
   if (cfg && Array.isArray(cfg.sectors)) return;
-  localStorage.setItem(LS.sectorCfg, JSON.stringify(defaultSectorCfg()));
+  storage.set(LS.sectorCfg, JSON.stringify(defaultSectorCfg()));
 }
-function getSectorCfg(){ ensureSectorCfg(); return safeJsonParse(localStorage.getItem(LS.sectorCfg), defaultSectorCfg()); }
+function getSectorCfg(){ ensureSectorCfg(); return safeJsonParse(storage.get(LS.sectorCfg), defaultSectorCfg()); }
 
 function openSectorManager(){
   const cfg = getSectorCfg();
@@ -1155,7 +1171,7 @@ function saveNewSector(){
   }
   const cfg = getSectorCfg();
   cfg.sectors.unshift({ id: uuid(), name, market, etfs, tickers });
-  localStorage.setItem(LS.sectorCfg, JSON.stringify(cfg));
+  storage.set(LS.sectorCfg, JSON.stringify(cfg));
   renderSectorMgrList(cfg);
   $("secNewName").value = "";
   $("secNewTickers").value = "";
@@ -1165,14 +1181,14 @@ function deleteSector(id){
   if (!confirm("确定删除这个板块？")) return;
   const cfg = getSectorCfg();
   cfg.sectors = cfg.sectors.filter(s=>s.id!==id);
-  localStorage.setItem(LS.sectorCfg, JSON.stringify(cfg));
+  storage.set(LS.sectorCfg, JSON.stringify(cfg));
   renderSectorMgrList(cfg);
   toast("已删除板块");
 }
 
 async function refreshSectors(){
   ensurePositions();
-  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
   const cfg = getSectorCfg();
 
   if (sectorScanCtrl) {
@@ -1200,7 +1216,7 @@ async function refreshSectors(){
   sectorScanCtrl = new AbortController();
   const signal = sectorScanCtrl.signal;
 
-  const prev = safeJsonParse(localStorage.getItem(LS.sectorCache), null);
+  const prev = safeJsonParse(storage.get(LS.sectorCache), null);
   const mergedMap = new Map();
   if (prev && prev.ok && Array.isArray(prev.items)) {
     for (const it of prev.items) {
@@ -1248,7 +1264,7 @@ async function refreshSectors(){
         mergedMap.set(key, it);
 
         const merged = { ok:true, build: j.build, items: Array.from(mergedMap.values()) };
-        localStorage.setItem(LS.sectorCache, JSON.stringify(merged));
+        storage.set(LS.sectorCache, JSON.stringify(merged));
         window.sectorCache = merged;
         renderSectors();
       }
@@ -1329,13 +1345,13 @@ function renderSectorItem(it){
 }
 
 function ensurePrompts(){
-  const p = safeJsonParse(localStorage.getItem(LS.prompts), null);
+  const p = safeJsonParse(storage.get(LS.prompts), null);
   if (p && p.analysisPrompt && p.taskPrompts) return;
-  localStorage.setItem(LS.prompts, JSON.stringify(defaultPrompts()));
+  storage.set(LS.prompts, JSON.stringify(defaultPrompts()));
 }
 function openPromptManager(){
   ensurePrompts();
-  const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
+  const p = safeJsonParse(storage.get(LS.prompts), defaultPrompts());
   const body = document.createElement("div");
   body.innerHTML = `
     <div class="li">
@@ -1381,26 +1397,26 @@ function openPromptManager(){
   $("pmTaskKey").value = $("taskMode").value || "pre";
   $("pmTaskText").value = p.taskPrompts[$("pmTaskKey").value] || "";
 }
-function pmLoadTask(){ const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts()); $("pmTaskText").value = p.taskPrompts[$("pmTaskKey").value] || ""; }
+function pmLoadTask(){ const p = safeJsonParse(storage.get(LS.prompts), defaultPrompts()); $("pmTaskText").value = p.taskPrompts[$("pmTaskKey").value] || ""; }
 function pmSaveTask(){
-  const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
+  const p = safeJsonParse(storage.get(LS.prompts), defaultPrompts());
   const k = $("pmTaskKey").value;
   p.taskPrompts[k] = $("pmTaskText").value;
-  localStorage.setItem(LS.prompts, JSON.stringify(p));
+  storage.set(LS.prompts, JSON.stringify(p));
   toast("已保存该 Task Prompt");
 }
 function pmSaveAll(){
-  const p = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
+  const p = safeJsonParse(storage.get(LS.prompts), defaultPrompts());
   p.analysisPrompt = $("pmAnalysis").value;
   const k = $("pmTaskKey").value;
   p.taskPrompts[k] = $("pmTaskText").value;
-  localStorage.setItem(LS.prompts, JSON.stringify(p));
+  storage.set(LS.prompts, JSON.stringify(p));
   toast("已保存 Prompt");
   closeSheet();
 }
 function pmRestoreDefaults(){
   if (!confirm("恢复默认 Prompt？会覆盖你的自定义。")) return;
-  localStorage.setItem(LS.prompts, JSON.stringify(defaultPrompts()));
+  storage.set(LS.prompts, JSON.stringify(defaultPrompts()));
   openPromptManager();
 }
 async function pmCopy(){
@@ -1411,11 +1427,11 @@ async function pmCopy(){
 
 async function runAI(){
   ensurePositions();
-  const base = (localStorage.getItem(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
-  const cfg = safeJsonParse(localStorage.getItem(LS.ai), {});
+  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+  const cfg = safeJsonParse(storage.get(LS.ai), {});
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) return alert("先配置 AI BaseUrl / Key / Model 并保存");
   await refreshAll();
-  const prompts = safeJsonParse(localStorage.getItem(LS.prompts), defaultPrompts());
+  const prompts = safeJsonParse(storage.get(LS.prompts), defaultPrompts());
   const mode = $("taskMode").value;
   const analysisPrompt = clampStr(prompts.analysisPrompt || "");
   const taskPrompt = clampStr((prompts.taskPrompts||{})[mode] || "");
@@ -1426,10 +1442,10 @@ async function runAI(){
     tech: p._techRaw || null,
     techTags: (p._techTags||[]).map(x=>x.text)
   }));
-  const risk = safeJsonParse(localStorage.getItem(LS.riskCache), null);
-  const tech = safeJsonParse(localStorage.getItem(LS.techCache), null);
-  const sectors = safeJsonParse(localStorage.getItem(LS.sectorCache), null);
-  const news = safeJsonParse(localStorage.getItem(LS.newsCache), null);
+  const risk = safeJsonParse(storage.get(LS.riskCache), null);
+  const tech = safeJsonParse(storage.get(LS.techCache), null);
+  const sectors = safeJsonParse(storage.get(LS.sectorCache), null);
+  const news = safeJsonParse(storage.get(LS.newsCache), null);
 
   $("aiOut").value = "生成中…";
   try{
