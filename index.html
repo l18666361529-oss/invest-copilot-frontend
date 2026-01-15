@@ -1221,13 +1221,26 @@ async function refreshSectors(){
 
       $("sectorStatus").textContent = `扫描中… ${done+1}/${total}  当前：${q.theme} (${q.symbol})`;
 
-      const r = await fetch(`${base}/api/sector/scan`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ items: [ { theme: q.theme, market: q.market, symbol: q.symbol, name: null } ] }),
-        signal
-      });
-      const j = await r.json();
+      // 请求失败时自动重试 1 次（常见于外盘限流/偶发超时）
+      let j = null;
+      try{
+        const r = await fetch(`${base}/api/sector/scan`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ items: [ { theme: q.theme, market: q.market, symbol: q.symbol, name: null } ] }),
+          signal
+        });
+        j = await r.json();
+      }catch(err){
+        await sleep(1500, signal);
+        const r2 = await fetch(`${base}/api/sector/scan`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ items: [ { theme: q.theme, market: q.market, symbol: q.symbol, name: null } ] }),
+          signal
+        });
+        j = await r2.json();
+      }
 
       if (j && j.ok && Array.isArray(j.items) && j.items.length){
         const it = j.items[0];
@@ -1243,7 +1256,10 @@ async function refreshSectors(){
       done += 1;
       $("sectorStatus").textContent = `扫描中… ${done}/${total}  已更新：${mergedMap.size} 条`;
 
-      const waitMs = 5000 + Math.floor(Math.random()*5000);
+      // 分市场控制节奏：美股数据源更容易限流，适当放慢（否则会大量缺数据）
+      let waitMs;
+      if (q.market === "US") waitMs = 15000 + Math.floor(Math.random()*5000); // 15-20s
+      else waitMs = 3000 + Math.floor(Math.random()*3000); // 3-6s
       await sleep(waitMs, signal);
     }
 
