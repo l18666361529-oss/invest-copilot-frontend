@@ -500,6 +500,22 @@ const LS = {
 const DEFAULT_BACKEND = (localStorage.getItem(LS.backend) || "").trim() || "http://localhost:3000";
 const $ = (id)=>document.getElementById(id);
 
+function setVal(id, val){
+  const el = $(id);
+  if (!el) return;
+  el.value = val;
+}
+function setChecked(id, v){
+  const el = $(id);
+  if (!el) return;
+  el.checked = !!v;
+}
+function setText(id, t){
+  const el = $(id);
+  if (!el) return;
+  el.textContent = t;
+}
+
 function uuid(){
   try{
     if (globalThis.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -542,17 +558,17 @@ function sleep(ms, signal){
 
 function init(){
   try{
-    $("backend").value = localStorage.getItem(LS.backend) || DEFAULT_BACKEND;
+    setVal("backend", localStorage.getItem(LS.backend) || DEFAULT_BACKEND);
     const ai = safeJsonParse(localStorage.getItem(LS.ai), {});
-    $("aiBase").value = ai.baseUrl || "https://api.openai.com";
-    $("aiKey").value = ai.apiKey || "";
-    $("aiModel").value = ai.model || "";
-    $("outLang").value = ai.outLang || "zh";
+    setVal("aiBase", ai.baseUrl || "https://api.openai.com");
+    setVal("aiKey", ai.apiKey || "");
+    setVal("aiModel", ai.model || "");
+    setVal("outLang", ai.outLang || "zh");
     $("aiCfgOut").textContent = ai.model ? "✅ 已加载本机 AI 配置" : "未配置。";
 
     const news = safeJsonParse(localStorage.getItem(LS.news), {});
-    $("kwZh").value = news.kwZh || "";
-    $("kwEn").value = news.kwEn || "";
+    setVal("kwZh", news.kwZh || "");
+    setVal("kwEn", news.kwEn || "");
     $("newsSourcePreset").value = news.preset || "mixed";
     $("newsLimit").value = news.limit || 18;
     $("rssCustom").value = (news.customRss || []).join("\n");
@@ -656,8 +672,8 @@ function saveAI(){
 }
 function clearAI(){
   localStorage.removeItem(LS.ai);
-  $("aiKey").value = "";
-  $("aiModel").value = "";
+  setVal("aiKey", "");
+  setVal("aiModel", "");
   $("aiCfgOut").textContent = "已清空。";
   toast("已清空 AI 配置");
 }
@@ -938,7 +954,7 @@ async function refreshTech(){
     const r = await fetch(`${base}/api/tech/batch`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ positions: payload, force: !!force })
+      body: JSON.stringify({ positions: payload })
     });
     const j = await r.json();
     if (!j.ok) return alert("技术指标失败：" + (j.error||""));
