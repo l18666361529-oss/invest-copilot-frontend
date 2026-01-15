@@ -1107,7 +1107,7 @@ function openSectorManager(){
     <div class="mut small">你可以删除默认板块，也可以新增。国内板块：通过“ETF 代码（6位）”添加；美股板块：通过“TICKER”添加。</div>
     <div id="secMgrList" class="scroll" style="margin-top:12px; max-height: 46vh;"></div>
     <hr style="border:0;border-top:1px solid var(--bd); margin:14px 0;">
-    <div style="font-weight:900; margin-bottom:8px;">新增板块</div>
+    <div style="font-weight:900; margin-bottom:8px;">新增板块</div><div class="mut small" style="margin:-4px 0 8px 0;">💡 可以只填代码，板块名称留空会自动补全（取第一个标的名称）。</div>
     <div class="row">
       <input id="secNewName" placeholder="板块名称，例如：AI/机器人/煤炭/军工/中国互联网..." />
       <select id="secNewMarket" style="max-width:160px;">
@@ -1153,29 +1153,64 @@ function renderSectorMgrList(cfg){
     box.appendChild(div);
   }
 }
-function saveNewSector(){
-  const name = $("secNewName").value.trim();
-  const market = $("secNewMarket").value;
-  const raw = $("secNewTickers").value.trim();
-  if (!name) return alert("请输入板块名称");
-  if (!raw) return alert("请输入代码列表");
-  const parts = raw.split(/[,，\s]+/).map(s=>s.trim()).filter(Boolean);
-  if (!parts.length) return alert("代码列表为空");
-  let etfs=[], tickers=[];
-  if (market==="CN"){
-    etfs = parts.filter(x=>/^\d{6}$/.test(x));
-    if (!etfs.length) return alert("国内板块必须至少包含一个 6 位 ETF 代码");
-  } else {
-    tickers = parts.map(x=>x.toUpperCase()).filter(x=>/^[A-Z0-9\.-]{1,12}$/.test(x));
-    if (!tickers.length) return alert("美股板块必须至少包含一个合法 Ticker");
+async function saveNewSector(){
+  try{
+    const base = (storage.get(LS.backend) || $("backend")?.value?.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+
+    let name = $("secNewName")?.value?.trim() || "";
+    const market = $("secNewMarket")?.value;
+    const raw = $("secNewTickers")?.value?.trim() || "";
+
+    if (!raw) return alert("请输入代码列表");
+
+    const parts = raw.split(/[,，\s]+/).map(s=>s.trim()).filter(Boolean);
+    if (!parts.length) return alert("代码列表为空");
+
+    let etfs=[], tickers=[];
+    if (market==="CN"){
+      etfs = parts.filter(x=>/^\d{6}$/.test(x));
+      if (!etfs.length) return alert("国内板块必须至少包含一个 6 位 ETF 代码");
+    } else {
+      tickers = parts.map(x=>x.toUpperCase()).filter(x=>/^[A-Z0-9\.-]{1,12}$/.test(x));
+      if (!tickers.length) return alert("美股板块必须至少包含一个合法 Ticker");
+    }
+
+    // ✅ 自动补全板块名称：如果你没填板块名，就用第一个代码去解析“标的名称”
+    if (!name){
+      const code0 = market==="CN" ? etfs[0] : tickers[0];
+      try{
+        toast("自动补全板块名称…", 1600);
+        const r = await fetch(`${base}/api/meta/resolve`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ type: market==="CN" ? "CN_FUND" : "US_TICKER", code: code0 })
+        });
+        const j = await r.json();
+        if (j && j.ok && j.name) name = String(j.name).trim();
+      }catch(e){}
+      if (!name) name = market==="CN" ? `国内板块 ${etfs[0]}` : `美股板块 ${tickers[0]}`;
+      if ($("secNewName")) $("secNewName").value = name;
+    }
+
+    const cfg = getSectorCfg();
+    cfg.sectors.unshift({ id: uuid(), name, market, etfs, tickers });
+    storage.set(LS.sectorCfg, JSON.stringify(cfg));
+    renderSectorMgrList(cfg);
+
+    // 更明显反馈：滚到顶部并短暂高亮
+    const box = $("secMgrList");
+    if (box){
+      box.scrollTop = 0;
+      box.style.outline = "2px solid rgba(143,255,236,.35)";
+      setTimeout(()=>{ box.style.outline = ""; }, 700);
+    }
+
+    if ($("secNewTickers")) $("secNewTickers").value = "";
+    toast("已添加板块");
+  }catch(e){
+    console.error(e);
+    alert("添加失败：" + (e?.message || e));
   }
-  const cfg = getSectorCfg();
-  cfg.sectors.unshift({ id: uuid(), name, market, etfs, tickers });
-  storage.set(LS.sectorCfg, JSON.stringify(cfg));
-  renderSectorMgrList(cfg);
-  $("secNewName").value = "";
-  $("secNewTickers").value = "";
-  toast("已添加板块");
 }
 function deleteSector(id){
   if (!confirm("确定删除这个板块？")) return;
