@@ -1012,8 +1012,7 @@ function saveNewsConfig(silent=false){
     kwEn: $("kwEn")?.value?.trim() || "",
     preset: $("newsSourcePreset")?.value || "mix",
     limit: Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18))),
-    customRss: ($("rssCustom")?.value || "").split(/
-+/).map(s=>s.trim()).filter(Boolean)
+    customRss: ($("rssCustom")?.value || "").split(/\n+/).map(s=>s.trim()).filter(Boolean)
   };
   storage.set(LS.news, JSON.stringify(cfg));
   if (!silent){
