@@ -374,40 +374,38 @@
           技术/风控仅用于“提示风险与状态”，不等于买卖建议；真正动作请结合你的目标、期限、回撤承受力。\n          <br>📌 计算口径："金额"默认为你的投入金额；若填写"成本价/成本净值"，系统会用 份额=投入/成本 来估算当前市值与盈亏。
         </div>
       </div>
-
       <div class="card">
-        <h3>④ 新闻与政策（0条时自动回退显示“最新要闻”）</h3>
+        <h3>④ 新闻与政策（自动随持仓变化）</h3>
         <div class="row">
-          <textarea id="kwZh" placeholder="中文关键词（用逗号分隔）：例如 降准, 地产, 国企改革, 恒生科技, 数据要素..."></textarea>
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <textarea id="kwEn" placeholder="English keywords (comma-separated): e.g. Fed, rate cut, CPI, Nvidia, AI chips, China stimulus..."></textarea>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <select id="newsSourcePreset">
-            <option value="mixed">来源：混合（中+美）</option>
-            <option value="us">来源：美国为主</option>
-            <option value="cn">来源：中国/中文为主</option>
-            <option value="custom">来源：自定义 RSS</option>
-          </select>
-          <input id="newsLimit" type="number" min="5" max="50" value="18" placeholder="条数" style="max-width:140px;"/>
-        </div>
-
-        <details style="margin-top:10px;">
-          <summary>自定义 RSS（每行一个 URL，只有选择“自定义 RSS”才会使用）</summary>
-          <textarea id="rssCustom" placeholder="https://...\nhttps://..."></textarea>
-          <div class="mut small">提示：你可以把任何可用 RSS 丢进来（比如你信任的媒体/机构）。</div>
-        </details>
-
-        <div class="row" style="margin-top:10px;">
-          <button class="primary" onclick="saveNewsConfig()">保存配置</button>
+          <button class="secondary" onclick="buildNewsPlan()">🧠 自动生成关键词</button>
           <button class="secondary" onclick="fetchNews()">🗞 抓取新闻</button>
           <button class="secondary" onclick="clearNews()">清空</button>
+          <input id="newsLimit" type="number" min="5" max="50" value="18" placeholder="条数" style="max-width:140px;"/>
+        </div>
+        <div class="mut small" style="margin-top:10px;">
+          说明：从 RSS 标题/摘要中匹配关键词。命中 0 条时会回退显示最新要闻（避免空列表）。
+          <br/>提示：中文词在“美国为主”的英文源里很难命中，建议中英文同义词一起写（如：恒生科技, Hang Seng Tech, HSTECH）。
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="mut">当前主题（自动）：</div>
+          <div id="themes" class="small" style="margin-top:6px;"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="mut">关键词池（可手动增删，用逗号分隔；支持中英文混合）：</div>
+          <textarea id="newsKeywords" placeholder="例如：恒生科技, Hang Seng Tech, HSTECH, 腾讯, Alibaba, Meituan, Fed, CPI, Nvidia..."></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="secondary" onclick="saveNewsKeywords()">保存关键词</button>
+            <button class="secondary" onclick="resetNewsKeywords()">重置为自动关键词</button>
+          </div>
         </div>
 
         <div class="mut small" id="newsStatus" style="margin-top:10px;"></div>
-        <div id="newsList" class="list"></div>
+        <details open style="margin-top:10px;">
+          <summary>新闻列表（最近；可滚动）</summary>
+          <div id="newsList" class="scroll" style="margin-top:10px;"></div>
+        </details>
       </div>
 
       <div class="card">
@@ -489,13 +487,13 @@
 const storage = {
   ok: true,
   get(key){
-    try { return storage.get(key); } catch(e){ this.ok = false; return null; }
+    try { return localStorage.getItem(key); } catch(e){ this.ok = false; return null; }
   },
   set(key, val){
-    try { storage.set(key, val); return true; } catch(e){ this.ok = false; return false; }
+    try { localStorage.setItem(key, val); return true; } catch(e){ this.ok = false; return false; }
   },
   remove(key){
-    try { storage.remove(key); return true; } catch(e){ this.ok = false; return false; }
+    try { localStorage.removeItem(key); return true; } catch(e){ this.ok = false; return false; }
   }
 };
 
@@ -506,6 +504,8 @@ const LS = {
   prompts: "nq_prompts",
   news: "nq_news",
   newsCache: "nq_news_cache",
+  newsKeywords: "nq_news_keywords",
+  newsPlan: "nq_news_plan",
   techCache: "nq_tech_cache",
   riskCache: "nq_risk_cache",
   sectorCfg: "nq_sector_cfg",
@@ -582,12 +582,12 @@ function init(){
     setVal("outLang", ai.outLang || "zh");
     $("aiCfgOut").textContent = ai.model ? "✅ 已加载本机 AI 配置" : "未配置。";
 
-    const news = safeJsonParse(storage.get(LS.news), {});
-    setVal("kwZh", news.kwZh || "");
-    setVal("kwEn", news.kwEn || "");
-    $("newsSourcePreset").value = news.preset || "mixed";
-    $("newsLimit").value = news.limit || 18;
-    $("rssCustom").value = (news.customRss || []).join("\n");
+    const plan = safeJsonParse(storage.get(LS.newsPlan), null);
+    if (plan && plan.themes) renderThemes(plan.themes);
+
+    const kw = (storage.get(LS.newsKeywords) || "").trim();
+    if ($("newsKeywords")) $("newsKeywords").value = kw;
+    if ($("newsLimit")) $("newsLimit").value = (safeJsonParse(storage.get(LS.news), {}).limit || 18);
 
     window.positions = loadPositions();
     renderPositions();
@@ -1006,33 +1006,182 @@ async function refreshTech(){
   }
 }
 
-function saveNewsConfig(silent=false){
-  const cfg = {
-    kwZh: $("kwZh")?.value?.trim() || "",
-    kwEn: $("kwEn")?.value?.trim() || "",
-    preset: $("newsSourcePreset")?.value || "mix",
-    limit: Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18))),
-    customRss: ($("rssCustom")?.value || "").split(/\n+/).map(s=>s.trim()).filter(Boolean)
-  };
-  storage.set(LS.news, JSON.stringify(cfg));
-  if (!silent){
-    if ($("newsStatus")) $("newsStatus").textContent = "✅ 已保存新闻配置。";
-    toast("已保存新闻配置");
-  }
-  return cfg;
+// ===== NEWS (replaced) =====
+
+function renderThemes(themes){
+  const el = $("themes");
+  if (!el) return;
+  el.textContent = Array.isArray(themes) && themes.length ? themes.join(" / ") : "（尚未生成）";
 }
+
+function saveNewsKeywords(){
+  const kw = ($("newsKeywords")?.value || "").trim();
+  storage.set(LS.newsKeywords, kw);
+  $("newsStatus").textContent = "✅ 已保存关键词。";
+  toast("已保存关键词");
+}
+
+function resetNewsKeywords(){
+  const plan = safeJsonParse(storage.get(LS.newsPlan), null);
+  if (!plan || !Array.isArray(plan.keywords)) return alert("先点“自动生成关键词”");
+  const kw = plan.keywords.join(",");
+  if ($("newsKeywords")) $("newsKeywords").value = kw;
+  storage.set(LS.newsKeywords, kw);
+  $("newsStatus").textContent = "已重置为自动关键词。";
+  toast("已重置关键词");
+}
+
+
+function genNewsPlanFromPositions(positions){
+  const themes = [];
+  const kw = new Set();
+
+  const addKw = (arr)=>{ for (const x of (arr||[])){ const s=String(x||'').trim(); if(s) kw.add(s); } };
+  const addTheme = (t)=>{ const s=String(t||'').trim(); if(s && !themes.includes(s)) themes.push(s); };
+
+  // Macro defaults (CN + EN)
+  addKw([
+    "美联储","FOMC","Fed","利率","rate cut","rate hike","降息","CPI","PPI","inflation","US Treasury","收益率曲线",
+    "中国央行","降准","政策","监管","人民币","汇率","地产","财政","PMI","出口","关税","China stimulus"
+  ]);
+
+  const MAP = {
+    "QQQ": ["QQQ","Nasdaq 100","Nasdaq","Big Tech","AI","Nvidia","earnings"],
+    "XLK": ["XLK","US tech","Big Tech","AI","cloud","software"],
+    "SOXX": ["SOXX","semiconductor","chips","Nvidia","TSMC","ASML"],
+    "SMH": ["SMH","semiconductor","chips","Nvidia","TSMC"],
+    "XLE": ["XLE","oil","crude","WTI","Brent","OPEC"],
+    "USO": ["USO","oil","crude","WTI","OPEC"],
+    "GLD": ["GLD","gold","XAU","real yield","美元"],
+    "IAU": ["IAU","gold","XAU","real yield"],
+    "INDA": ["INDA","India","Nifty","RBI","rupee"],
+    "TQQQ": ["TQQQ","Nasdaq","Big Tech","AI","volatility"],
+    // Common CN ETF codes (examples)
+    "513180": ["中国互联网","China internet","腾讯","Alibaba","Meituan","恒生科技","Hang Seng Tech"],
+    "513330": ["恒生科技","Hang Seng Tech","HSTECH","港股科技"],
+    "512660": ["军工","国防","航天","军工订单"],
+    "562500": ["机器人","工业机器人","自动化","AI"],
+  };
+
+  for (const p of (positions||[])){
+    const code = String(p.code||"").trim().toUpperCase();
+    const name = String(p.name||"").trim();
+    if (name) addTheme(name);
+    if (code) addKw([code]);
+
+    if (code && MAP[code]) addKw(MAP[code]);
+
+    // Heuristics: recognize common themes by name
+    if (/恒生科技|港股科技/.test(name)) addKw(["恒生科技","Hang Seng Tech","HSTECH","Hong Kong tech"]);
+    if (/纳斯达克|Nasdaq/.test(name)) addKw(["Nasdaq","Nasdaq 100","QQQ","Big Tech"]);
+    if (/科创|半导体|芯片/.test(name)) addKw(["半导体","芯片","semiconductor","SOXX","SMH","Nvidia"]);
+    if (/机器人|自动化/.test(name)) addKw(["机器人","自动化","industrial automation"]);
+    if (/医药|创新药|医疗/.test(name)) addKw(["医药","医疗","biotech","FDA"]);
+  }
+
+  // Cap themes
+  const finalThemes = themes.slice(0, 6);
+  if (!finalThemes.length) finalThemes.push("宏观与市场");
+
+  // Keywords: keep within a reasonable size
+  const finalKw = Array.from(kw);
+  // Prefer shorter list for mobile readability
+  const trimmed = finalKw.slice(0, 60);
+
+  return { ok:true, build:"local", themes: finalThemes, keywords: trimmed };
+}
+
+function buildNewsPlan(){
+  try{
+    const payload = (window.positions||[]).map(p=>({ type:p.type, code:p.code, name:p.name, amount:p.amount, mv:p.mv }));
+    const plan = genNewsPlanFromPositions(payload);
+    storage.set(LS.newsPlan, JSON.stringify(plan));
+    renderThemes(plan.themes || []);
+
+    const kw = (plan.keywords||[]).join(",");
+    if ($("newsKeywords")) $("newsKeywords").value = kw;
+    storage.set(LS.newsKeywords, kw);
+
+    if ($("newsStatus")) $("newsStatus").textContent = "✅ 已生成自动关键词（可手动修改后再抓取）";
+    toast("已生成关键词");
+  }catch(e){
+    if ($("newsStatus")) $("newsStatus").textContent = "❌ 生成失败：" + (e?.message||e);
+    alert("生成关键词失败：" + (e?.message||e));
+  }
+}
+
+function parsePubDate(s){
+  const t = Date.parse(String(s||""));
+  return isFinite(t) ? t : null;
+}
+
+function normalizeAndSortNews(items){
+  const maxAgeDays = 120; // 防止出现 2017/2018 这种“远古新闻”污染列表
+  const cutoff = Date.now() - maxAgeDays*24*3600*1000;
+  const kept = [];
+  for (const it of (items||[])){
+    const t = parsePubDate(it.pubDate);
+    if (t != null && t < cutoff) continue;
+    kept.push({ ...it, _t: t || 0 });
+  }
+  kept.sort((a,b)=> (b._t||0) - (a._t||0));
+  return kept;
+}
+
+function renderNews(items, meta){
+  const box = $("newsList");
+  box.innerHTML = "";
+  const list = normalizeAndSortNews(items||[]);
+  if (!list.length){
+    box.innerHTML = `<div class="mut small">暂无新闻。你可以先点“自动生成关键词”，再点“抓取新闻”。</div>`;
+    return;
+  }
+
+  for (const it of list){
+    const div = document.createElement("div");
+    div.className = "li";
+    const tags = [];
+    if (it.market) tags.push(`<span class="tag">${escapeHtml(it.market)}</span>`);
+    if (it.sentiment) tags.push(`<span class="tag ${it.sentiment==='利好'?'good':it.sentiment==='利空'?'bad':''}">${escapeHtml(it.sentiment)}</span>`);
+    div.innerHTML = `
+      <div class="liHead">
+        <div style="min-width:0;">
+          <div class="liTitle">${escapeHtml(it.title||"-")}</div>
+          <div class="mut small" style="margin-top:6px;">${escapeHtml(it.source||"")} · ${escapeHtml(it.pubDate||"")}</div>
+          <div class="tags" style="margin-top:8px;">${tags.join("")}</div>
+          <div class="mut small" style="margin-top:8px;">${escapeHtml(it.summary||"").slice(0,240)}${(it.summary||"").length>240?"…":""}</div>
+        </div>
+        <div>${it.link ? `<a class="tag" href="${escapeAttr(it.link)}" target="_blank" rel="noopener">打开</a>` : ""}</div>
+      </div>
+    `;
+    box.appendChild(div);
+  }
+
+  if (meta?.fallback){
+    const note = document.createElement("div");
+    note.className = "mut small";
+    note.style.marginBottom = "10px";
+    note.textContent = "说明：关键词命中为0时，会回退显示最新要闻（避免空列表）。如果你用的是中文关键词，建议同时加英文同义词提高命中。";
+    box.prepend(note);
+  }
+}
+
 function clearNews(){
   storage.remove(LS.newsCache);
-  $("newsList").innerHTML = "";
-  $("newsStatus").textContent = "已清空。";
+  if ($("newsList")) $("newsList").innerHTML = "";
+  if ($("newsStatus")) $("newsStatus").textContent = "已清空。";
   toast("已清空新闻");
 }
+
 async function fetchNews(){
   const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
-  const cfg = safeJsonParse(storage.get(LS.news), null) || saveNewsConfig(true);
-  const kwZh = (cfg.kwZh||"").trim();
-  const kwEn = (cfg.kwEn||"").trim();
-  if (!kwZh && !kwEn) return alert("至少填写中文或英文关键词之一");
+  const kw = (storage.get(LS.newsKeywords) || $("newsKeywords")?.value || "").trim();
+  if (!kw) return alert("请先填写关键词，或点“自动生成关键词”");
+
+  // 记住 limit（复用 LS.news 里的 limit 字段，兼容旧结构）
+  const limit = Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18)));
+  const old = safeJsonParse(storage.get(LS.news), {});
+  storage.set(LS.news, JSON.stringify({ ...old, limit }));
 
   $("newsStatus").textContent = "抓取中…";
   $("newsList").innerHTML = `<div class="mut small">抓取中…</div>`;
@@ -1042,18 +1191,18 @@ async function fetchNews(){
     const r = await fetch(`${base}/api/news/rss`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        kwZh, kwEn,
-        preset: cfg.preset || "mixed",
-        limit: cfg.limit || 18,
-        customRss: cfg.customRss || []
-      })
+      body: JSON.stringify({ kwZh: kw, kwEn: "", preset: "mixed", limit, customRss: [] })
     });
     const j = await r.json();
-    if (!j.ok) return alert("抓取新闻失败：" + (j.error||""));
+    if (!j.ok) throw new Error(j.error || "news failed");
+
     storage.set(LS.newsCache, JSON.stringify(j));
+
     const hit = j.matched ?? (j.items?.length||0);
-    $("newsStatus").textContent = j.fallback ? `⚠️ 关键词命中0条，已回退显示最新要闻（${j.items?.length||0}条）` : `✅ 获取 ${j.items?.length||0} 条`;
+    $("newsStatus").textContent = j.fallback
+      ? `⚠️ 关键词命中0条，已回退显示最新要闻（${j.items?.length||0}条）`
+      : `✅ 获取 ${j.items?.length||0} 条（命中≈${hit}）`;
+
     renderNews(j.items||[], j);
     toast(j.fallback ? "命中0条：已回退显示要闻" : "新闻已更新");
   }catch(e){
@@ -1061,49 +1210,9 @@ async function fetchNews(){
     toast("抓取失败（检查后端/网络）", 2200);
   }
 }
-function renderNews(items, meta){
-  const box = $("newsList");
-  box.innerHTML = "";
-  if (!items.length){
-    box.innerHTML = `<div class="mut small">暂无新闻。你可以先保存关键词，然后点“抓取新闻”。</div>`;
-    return;
-  }
-  for (const it of items){
-    const div = document.createElement("div");
-    div.className = "li";
-    const tags = [];
-    if (it.market) tags.push(`<span class="tag">${escapeHtml(it.market)}</span>`);
-    if (it.sentiment) tags.push(`<span class="tag ${it.sentiment==='利好'?'good':it.sentiment==='利空'?'bad':''}">${escapeHtml(it.sentiment)}</span>`);
-    if (it.topics?.length){
-      for (const t of it.topics.slice(0,4)) tags.push(`<span class="tag">${escapeHtml(t)}</span>`);
-    }
-    div.innerHTML = `
-      <div class="liHead">
-        <div style="min-width:0;">
-          <div class="liTitle">${escapeHtml(it.title||"-")}</div>
-          <div class="mut small" style="margin-top:6px;">
-            ${escapeHtml(it.source||"")} · ${escapeHtml(it.pubDate||"")}
-          </div>
-          <div class="tags" style="margin-top:8px;">${tags.join("")}</div>
-          <div class="mut small" style="margin-top:8px;">${escapeHtml(it.summary||it.description||"").slice(0,240)}${(it.summary||it.description||"").length>240?"…":""}</div>
-        </div>
-        <div>
-          ${it.link ? `<a class="tag" href="${escapeAttr(it.link)}" target="_blank" rel="noopener">打开</a>` : ""}
-        </div>
-      </div>
-    `;
-    box.appendChild(div);
-  }
-  if (meta?.fallback){
-    const note = document.createElement("div");
-    note.className = "mut small";
-    note.style.marginTop = "8px";
-    note.textContent = "说明：关键词命中为0时，会回退显示最新要闻（避免空列表）。你可改用英文关键词或切换来源/自定义RSS提高相关性。";
-    box.prepend(note);
-  }
-}
 
 let sectorScanCtrl = null;
+ null;
 function ensureSectorCfg(){
   const cfg = safeJsonParse(storage.get(LS.sectorCfg), null);
   if (cfg && Array.isArray(cfg.sectors)) return;
