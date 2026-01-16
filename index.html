@@ -375,13 +375,13 @@
         </div>
       </div>
       <div class="card">
-        <h3>④ 新闻与政策（自动随持仓变化）</h3>
+        <h3>④ 新闻与政策（近 7 天财经要闻，不用关键词）</h3>
         <div class="row">
-          <button class="secondary" onclick="buildNewsPlan()">🧠 自动生成关键词</button>
-          <button class="secondary" onclick="fetchNews()">🗞 抓取新闻</button>
+          <button class="secondary" onclick="fetchNews()">🗞 抓取近7天财经新闻</button>
           <button class="secondary" onclick="saveNewsConfig()">保存配置</button>
           <button class="secondary" onclick="clearNews()">清空</button>
           <input id="newsLimit" type="number" min="5" max="50" value="18" placeholder="条数" style="max-width:140px;"/>
+          <input id="newsDays" type="number" min="1" max="30" value="7" placeholder="天" style="max-width:120px;" title="只抓最近N天"/>
         </div>
 
         <div class="row" style="margin-top:10px;">
@@ -395,33 +395,12 @@
 
         <details style="margin-top:10px;">
           <summary>自定义 RSS（每行一个 URL，只有选择“自定义 RSS”才会使用）</summary>
-          <textarea id="rssCustom" placeholder="https://...
-https://..."></textarea>
-          <div class="mut small">提示：建议优先加入“会持续更新”的 RSS。部分源会夹带旧内容，我们会自动过滤很久以前的条目。</div>
+          <textarea id="rssCustom" placeholder="https://...\nhttps://..."></textarea>
+          <div class="mut small">提示：我们会自动过滤“超过最近 N 天”的旧条目；如果某个源长期不更新，它在近7天里就会贡献0条。</div>
         </details>
 
         <div class="mut small" style="margin-top:10px;">
-          说明：从 RSS 标题/摘要中匹配关键词。命中 0 条时会回退显示最新要闻（避免空列表）。
-          <br/>提示：如果你用的是英文源（美国为主/混合），纯中文通常难命中；建议中英文同义词一起写。
-        </div>
-
-        <div style="margin-top:12px;">
-          <div class="mut">当前主题（自动）：</div>
-          <div id="themes" class="small" style="margin-top:6px;"></div>
-        </div>
-
-        <div style="margin-top:12px;">
-          <div class="mut">中文关键词池（可手动增删，用逗号分隔）：</div>
-          <textarea id="newsKeywords" placeholder="例如：恒生科技, 恒科, 港股科技, 降准, 央行, 地产, 互联网平台…"></textarea>
-        </div>
-
-        <div style="margin-top:10px;">
-          <div class="mut">English keywords（comma-separated，可选）：</div>
-          <textarea id="newsKeywordsEn" placeholder="e.g. Hang Seng Tech, HSTECH, Tencent, Alibaba, Fed, CPI, Nvidia…"></textarea>
-          <div class="row" style="margin-top:10px;">
-            <button class="secondary" onclick="saveNewsKeywords()">保存关键词</button>
-            <button class="secondary" onclick="resetNewsKeywords()">重置为自动关键词</button>
-          </div>
+          说明：本模块不做关键词筛选，只抓取“最近 N 天”的财经要闻，并按时间倒序展示。
         </div>
 
         <div class="mut small" id="newsStatus" style="margin-top:10px;"></div>
@@ -612,6 +591,7 @@ function init(){
     const kw = (storage.get(LS.newsKeywords) || "").trim();
     if ($("newsKeywords")) $("newsKeywords").value = kw;
     if ($("newsLimit")) $("newsLimit").value = (safeJsonParse(storage.get(LS.news), {}).limit || 18);
+    if ($("newsDays")) $("newsDays").value = (safeJsonParse(storage.get(LS.news), {}).days || 7);
     // news preset + custom rss + english keywords
     const newsCfg = safeJsonParse(storage.get(LS.news), {});
     if ($("newsSourcePreset")) $("newsSourcePreset").value = (newsCfg.preset || "mixed");
@@ -1168,7 +1148,7 @@ function renderNews(items, meta){
   box.innerHTML = "";
   const list = normalizeAndSortNews(items||[]);
   if (!list.length){
-    box.innerHTML = `<div class="mut small">暂无新闻。你可以先点“自动生成关键词”，再点“抓取新闻”。</div>`;
+    box.innerHTML = `<div class="mut small">近 ${Math.max(1, Math.min(30, Number($("newsDays")?.value || 7)))} 天暂无可用新闻（可能是RSS源近期不更新，或网络/跨域限制导致抓取失败）。</div>`;
     return;
   }
 
@@ -1191,87 +1171,63 @@ function renderNews(items, meta){
     `;
     box.appendChild(div);
   }
-
-  if (meta?.fallback){
-    const note = document.createElement("div");
-    note.className = "mut small";
-    note.style.marginBottom = "10px";
-    note.textContent = "说明：关键词命中为0时，会回退显示最新要闻（避免空列表）。如果你用的是中文关键词，建议同时加英文同义词提高命中。";
-    box.prepend(note);
-  }
 }
 
 function clearNews(){
+  window.__news = [];
   storage.remove(LS.newsCache);
   if ($("newsList")) $("newsList").innerHTML = "";
-  if ($("newsStatus")) $("newsStatus").textContent = "已清空。";
-  toast("已清空新闻");
+  if ($("newsStatus")) $("newsStatus").textContent = "";
+  toast("已清空");
 }
 
 function saveNewsConfig(silent=false){
-  const preset = $("newsSourcePreset")?.value || "mixed";
-  const limit = Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18)));
-  const customText = $("rssCustom")?.value || "";
-  const customRss = customText.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-
-  storage.set(LS.newsRssCustom, customRss.join("\n"));
-
-  const old = safeJsonParse(storage.get(LS.news), {});
-  storage.set(LS.news, JSON.stringify({ ...old, preset, limit, customRss }));
-
-  if (!silent){
-    if ($("newsStatus")) $("newsStatus").textContent = "✅ 已保存新闻配置。";
-    toast("已保存新闻配置");
+  try{
+    const cfg = {
+      preset: $("newsSourcePreset")?.value || "mixed",
+      limit: Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18))),
+      days: Math.max(1, Math.min(30, Number($("newsDays")?.value || 7))),
+      customRss: String($("rssCustom")?.value||"").split(/\n+/).map(s=>s.trim()).filter(Boolean)
+    };
+    storage.set(LS.news, JSON.stringify(cfg));
+    if (!silent) toast("已保存新闻配置");
+  }catch(e){
+    console.error(e);
+    toast("保存失败：" + (e?.message||e), 2600);
   }
 }
 
 async function fetchNews(){
-  const base = (storage.get(LS.backend) || $("backend")?.value?.trim() || DEFAULT_BACKEND).replace(/\/+$/, "");
-
-  // 自动静默保存一次配置，避免“抓取时弹已保存”
-  saveNewsConfig(true);
-
-  const kwZh = (storage.get(LS.newsKeywords) || $("newsKeywords")?.value || "").trim();
-  const kwEn = (storage.get(LS.newsKeywordsEn) || $("newsKeywordsEn")?.value || "").trim();
-
-  if (!kwZh && !kwEn) return alert("请先填写关键词，或点“自动生成关键词”");
-
-  const cfg = safeJsonParse(storage.get(LS.news), {});
-  const preset = $("newsSourcePreset")?.value || cfg.preset || "mixed";
-  const limit = Math.max(5, Math.min(50, Number($("newsLimit")?.value || cfg.limit || 18)));
-
-  const customText = $("rssCustom")?.value || storage.get(LS.newsRssCustom) || "";
-  const customRss = customText.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-
-  // 记住最新设置
-  storage.set(LS.news, JSON.stringify({ ...cfg, preset, limit, customRss }));
-  storage.set(LS.newsRssCustom, customRss.join("\n"));
-
-  $("newsStatus").textContent = "抓取中…";
-  $("newsList").innerHTML = `<div class="mut small">抓取中…</div>`;
-  toast("正在抓取新闻…");
-
   try{
+    const base = (storage.get(LS.backend) || $("backend")?.value?.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+    const preset = $("newsSourcePreset")?.value || "mixed";
+    const limit = Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18)));
+    const days  = Math.max(1, Math.min(30, Number($("newsDays")?.value || 7)));
+    const customRss = (preset==="custom" ? String($("rssCustom")?.value||"") : "")
+      .split(/\n+/).map(s=>s.trim()).filter(Boolean);
+
+    $("newsStatus").textContent = `抓取中…（近 ${days} 天；上限 ${limit} 条）`;
+
+    // 不使用关键词：仅按时间抓取财经要闻
     const r = await fetch(`${base}/api/news/rss`, {
       method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ kwZh, kwEn, preset, limit, customRss })
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ preset, limit, days, customRss, kwZh:"", kwEn:"" })
     });
     const j = await r.json();
-    if (!j.ok) throw new Error(j.error || "news failed");
+    if (!j || !j.ok) throw new Error(j?.error || "news api error");
 
-    storage.set(LS.newsCache, JSON.stringify(j));
+    const items = Array.isArray(j.items) ? j.items : [];
+    window.__news = items;
+    renderNews(items);
+    $("newsStatus").textContent = `已抓取 ${items.length} 条（近 ${days} 天）`;
 
-    const hit = j.matched ?? (j.items?.length||0);
-    $("newsStatus").textContent = j.fallback
-      ? `⚠️ 关键词命中0条，已回退显示最新要闻（${j.items?.length||0}条）`
-      : `✅ 获取 ${j.items?.length||0} 条（命中≈${hit}）`;
-
-    renderNews(j.items||[], j);
-    toast(j.fallback ? "命中0条：已回退显示要闻" : "新闻已更新");
+    // cache
+    storage.set(LS.newsCache, JSON.stringify({ ok:true, at: Date.now(), items }));
   }catch(e){
-    $("newsStatus").textContent = "❌ 抓取失败：" + (e?.message||e);
-    toast("抓取失败（检查后端/网络）", 2200);
+    console.error(e);
+    toast("抓取新闻失败：" + (e?.message || e), 2600);
+    $("newsStatus").textContent = "抓取失败";
   }
 }
 
