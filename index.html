@@ -379,12 +379,30 @@
         <div class="row">
           <button class="secondary" onclick="buildNewsPlan()">🧠 自动生成关键词</button>
           <button class="secondary" onclick="fetchNews()">🗞 抓取新闻</button>
+          <button class="secondary" onclick="saveNewsConfig()">保存配置</button>
           <button class="secondary" onclick="clearNews()">清空</button>
           <input id="newsLimit" type="number" min="5" max="50" value="18" placeholder="条数" style="max-width:140px;"/>
         </div>
+
+        <div class="row" style="margin-top:10px;">
+          <select id="newsSourcePreset">
+            <option value="mixed">来源：混合（中+美）</option>
+            <option value="us">来源：美国为主</option>
+            <option value="cn">来源：中国/中文为主</option>
+            <option value="custom">来源：自定义 RSS</option>
+          </select>
+        </div>
+
+        <details style="margin-top:10px;">
+          <summary>自定义 RSS（每行一个 URL，只有选择“自定义 RSS”才会使用）</summary>
+          <textarea id="rssCustom" placeholder="https://...
+https://..."></textarea>
+          <div class="mut small">提示：建议优先加入“会持续更新”的 RSS。部分源会夹带旧内容，我们会自动过滤很久以前的条目。</div>
+        </details>
+
         <div class="mut small" style="margin-top:10px;">
           说明：从 RSS 标题/摘要中匹配关键词。命中 0 条时会回退显示最新要闻（避免空列表）。
-          <br/>提示：中文词在“美国为主”的英文源里很难命中，建议中英文同义词一起写（如：恒生科技, Hang Seng Tech, HSTECH）。
+          <br/>提示：如果你用的是英文源（美国为主/混合），纯中文通常难命中；建议中英文同义词一起写。
         </div>
 
         <div style="margin-top:12px;">
@@ -393,8 +411,13 @@
         </div>
 
         <div style="margin-top:12px;">
-          <div class="mut">关键词池（可手动增删，用逗号分隔；支持中英文混合）：</div>
-          <textarea id="newsKeywords" placeholder="例如：恒生科技, Hang Seng Tech, HSTECH, 腾讯, Alibaba, Meituan, Fed, CPI, Nvidia..."></textarea>
+          <div class="mut">中文关键词池（可手动增删，用逗号分隔）：</div>
+          <textarea id="newsKeywords" placeholder="例如：恒生科技, 恒科, 港股科技, 降准, 央行, 地产, 互联网平台…"></textarea>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="mut">English keywords（comma-separated，可选）：</div>
+          <textarea id="newsKeywordsEn" placeholder="e.g. Hang Seng Tech, HSTECH, Tencent, Alibaba, Fed, CPI, Nvidia…"></textarea>
           <div class="row" style="margin-top:10px;">
             <button class="secondary" onclick="saveNewsKeywords()">保存关键词</button>
             <button class="secondary" onclick="resetNewsKeywords()">重置为自动关键词</button>
@@ -407,8 +430,7 @@
           <div id="newsList" class="scroll" style="margin-top:10px;"></div>
         </details>
       </div>
-
-      <div class="card">
+<div class="card">
         <h3>⑤ 板块动向（可删/可自定义 + 国内/美股标签）</h3>
         <div class="row">
           <button class="primary" onclick="refreshSectors()">🧭 扫描板块</button>
@@ -505,6 +527,8 @@ const LS = {
   news: "nq_news",
   newsCache: "nq_news_cache",
   newsKeywords: "nq_news_keywords",
+  newsKeywordsEn: "nq_news_keywords_en",
+  newsRssCustom: "nq_news_rss_custom",
   newsPlan: "nq_news_plan",
   techCache: "nq_tech_cache",
   riskCache: "nq_risk_cache",
@@ -588,6 +612,12 @@ function init(){
     const kw = (storage.get(LS.newsKeywords) || "").trim();
     if ($("newsKeywords")) $("newsKeywords").value = kw;
     if ($("newsLimit")) $("newsLimit").value = (safeJsonParse(storage.get(LS.news), {}).limit || 18);
+    // news preset + custom rss + english keywords
+    const newsCfg = safeJsonParse(storage.get(LS.news), {});
+    if ($("newsSourcePreset")) $("newsSourcePreset").value = (newsCfg.preset || "mixed");
+    if ($("rssCustom")) $("rssCustom").value = (storage.get(LS.newsRssCustom) || (newsCfg.customRss||[]).join('\n') || "");
+    const kwEn = (storage.get(LS.newsKeywordsEn) || "").trim();
+    if ($("newsKeywordsEn")) $("newsKeywordsEn").value = kwEn;
 
     window.positions = loadPositions();
     renderPositions();
@@ -1016,7 +1046,9 @@ function renderThemes(themes){
 
 function saveNewsKeywords(){
   const kw = ($("newsKeywords")?.value || "").trim();
+  const kwEn = ($("newsKeywordsEn")?.value || "").trim();
   storage.set(LS.newsKeywords, kw);
+  storage.set(LS.newsKeywordsEn, kwEn);
   $("newsStatus").textContent = "✅ 已保存关键词。";
   toast("已保存关键词");
 }
@@ -1027,6 +1059,9 @@ function resetNewsKeywords(){
   const kw = plan.keywords.join(",");
   if ($("newsKeywords")) $("newsKeywords").value = kw;
   storage.set(LS.newsKeywords, kw);
+  const kwEn2 = (plan?.keywordsEn || "").trim();
+  if ($("newsKeywordsEn")) $("newsKeywordsEn").value = kwEn2;
+  storage.set(LS.newsKeywordsEn, kwEn2);
   $("newsStatus").textContent = "已重置为自动关键词。";
   toast("已重置关键词");
 }
@@ -1173,15 +1208,44 @@ function clearNews(){
   toast("已清空新闻");
 }
 
-async function fetchNews(){
-  const base = (storage.get(LS.backend) || $("backend").value.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
-  const kw = (storage.get(LS.newsKeywords) || $("newsKeywords")?.value || "").trim();
-  if (!kw) return alert("请先填写关键词，或点“自动生成关键词”");
-
-  // 记住 limit（复用 LS.news 里的 limit 字段，兼容旧结构）
+function saveNewsConfig(silent=false){
+  const preset = $("newsSourcePreset")?.value || "mixed";
   const limit = Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18)));
+  const customText = $("rssCustom")?.value || "";
+  const customRss = customText.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+
+  storage.set(LS.newsRssCustom, customRss.join("\n"));
+
   const old = safeJsonParse(storage.get(LS.news), {});
-  storage.set(LS.news, JSON.stringify({ ...old, limit }));
+  storage.set(LS.news, JSON.stringify({ ...old, preset, limit, customRss }));
+
+  if (!silent){
+    if ($("newsStatus")) $("newsStatus").textContent = "✅ 已保存新闻配置。";
+    toast("已保存新闻配置");
+  }
+}
+
+async function fetchNews(){
+  const base = (storage.get(LS.backend) || $("backend")?.value?.trim() || DEFAULT_BACKEND).replace(/\/+$/, "");
+
+  // 自动静默保存一次配置，避免“抓取时弹已保存”
+  saveNewsConfig(true);
+
+  const kwZh = (storage.get(LS.newsKeywords) || $("newsKeywords")?.value || "").trim();
+  const kwEn = (storage.get(LS.newsKeywordsEn) || $("newsKeywordsEn")?.value || "").trim();
+
+  if (!kwZh && !kwEn) return alert("请先填写关键词，或点“自动生成关键词”");
+
+  const cfg = safeJsonParse(storage.get(LS.news), {});
+  const preset = $("newsSourcePreset")?.value || cfg.preset || "mixed";
+  const limit = Math.max(5, Math.min(50, Number($("newsLimit")?.value || cfg.limit || 18)));
+
+  const customText = $("rssCustom")?.value || storage.get(LS.newsRssCustom) || "";
+  const customRss = customText.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+
+  // 记住最新设置
+  storage.set(LS.news, JSON.stringify({ ...cfg, preset, limit, customRss }));
+  storage.set(LS.newsRssCustom, customRss.join("\n"));
 
   $("newsStatus").textContent = "抓取中…";
   $("newsList").innerHTML = `<div class="mut small">抓取中…</div>`;
@@ -1191,7 +1255,7 @@ async function fetchNews(){
     const r = await fetch(`${base}/api/news/rss`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ kwZh: kw, kwEn: "", preset: "mixed", limit, customRss: [] })
+      body: JSON.stringify({ kwZh, kwEn, preset, limit, customRss })
     });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || "news failed");
