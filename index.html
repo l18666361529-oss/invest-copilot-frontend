@@ -1212,7 +1212,13 @@ async function fetchNews(){
     const r = await fetch(`${base}/api/news/rss`, {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ preset, limit, days, customRss, kwZh:"", kwEn:"" })
+      body: JSON.stringify({
+        // Backward/forward compatible params
+        preset, source: preset,
+        limit, days,
+        customRss, rss: customRss,
+        kwZh:"", kwEn:""
+      })
     });
     const j = await r.json();
     if (!j || !j.ok) throw new Error(j?.error || "news api error");
