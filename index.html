@@ -273,6 +273,13 @@
       max-width: calc(100vw - 24px);
     }
     .toast.show{ display:block; }
+  
+    .chk{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--bd);border-radius:999px;background:rgba(255,255,255,.02);font-size:13px;color:var(--mut);user-select:none;touch-action:manipulation;}
+    .chk input{width:18px;height:18px;}
+    .newsScroll{max-height:42vh;}
+    @media (min-width:860px){ .newsScroll{max-height:520px;} }
+    .newsSummary{word-break:break-word;overflow-wrap:anywhere;}
+
   </style>
 </head>
 <body>
@@ -375,9 +382,11 @@
         </div>
       </div>
       <div class="card">
-        <h3>④ 新闻与政策（近 7 天财经要闻，不用关键词）</h3>
+        <h3>④ 新闻与政策（近 N 天财经要闻 + 可选关键词相关模式）</h3>
         <div class="row">
-          <button class="secondary" onclick="fetchNews()">🗞 抓取近7天财经新闻</button>
+          <button class="secondary" onclick="fetchNews()">🗞 抓取近N天财经新闻</button>
+          <button class="secondary" onclick="buildNewsPlan()">🧠 自动生成关键词</button>
+          <label class="chk" title="开启后：优先展示命中关键词的新闻；若0条命中会自动回退要闻"><input id="newsUseKeywords" type="checkbox"/> 只看相关</label>
           <button class="secondary" onclick="saveNewsConfig()">保存配置</button>
           <button class="secondary" onclick="clearNews()">清空</button>
           <input id="newsLimit" type="number" min="5" max="50" value="18" placeholder="条数" style="max-width:140px;"/>
@@ -394,21 +403,28 @@
         </div>
 
         <details style="margin-top:10px;">
+          <summary>关键词（可选；用于“只看相关”排序/过滤）</summary>
+          <textarea id="newsKeywords" placeholder="中文关键词（逗号/换行分隔），例如：恒生科技, 港股科技, 降准, 人民币"></textarea>
+          <textarea id="newsKeywordsEn" placeholder="English keywords (comma/newline-separated), e.g. Hang Seng Tech, HSTECH, Tencent, Alibaba, Fed, CPI, Nvidia..."></textarea>
+          <div class="mut small">提示：只看相关=优先展示命中关键词的新闻；若 0 条命中，会自动回退展示最新要闻（避免空列表）。</div>
+        </details>
+
+        <details style="margin-top:10px;">
           <summary>自定义 RSS（每行一个 URL，只有选择“自定义 RSS”才会使用）</summary>
           <textarea id="rssCustom" placeholder="https://...\nhttps://..."></textarea>
           <div class="mut small">提示：我们会自动过滤“超过最近 N 天”的旧条目；如果某个源长期不更新，它在近7天里就会贡献0条。</div>
         </details>
 
         <div class="mut small" style="margin-top:10px;">
-          说明：本模块不做关键词筛选，只抓取“最近 N 天”的财经要闻，并按时间倒序展示。
+          说明：默认抓“近 N 天”的财经要闻。开启「只看相关」后，会按关键词相关度排序/过滤，但不会让列表变空。
         </div>
 
         <div class="mut small" id="newsStatus" style="margin-top:10px;"></div>
-        <details open style="margin-top:10px;">
-          <summary>新闻列表（最近；可滚动）</summary>
-          <div id="newsList" class="scroll" style="margin-top:10px;"></div>
+        <details id="newsPanel" style="margin-top:10px;">
+          <summary id="newsPanelSummary">新闻列表（折叠）</summary>
+          <div id="newsList" class="scroll newsScroll" style="margin-top:10px;"></div>
         </details>
-      </div>
+</div>
 <div class="card">
         <h3>⑤ 板块动向（可删/可自定义 + 国内/美股标签）</h3>
         <div class="row">
@@ -595,6 +611,7 @@ function init(){
     // news preset + custom rss + english keywords
     const newsCfg = safeJsonParse(storage.get(LS.news), {});
     if ($("newsSourcePreset")) $("newsSourcePreset").value = (newsCfg.preset || "mixed");
+    if ($("newsUseKeywords")) $("newsUseKeywords").checked = !!newsCfg.useKeywords;
     if ($("rssCustom")) $("rssCustom").value = (storage.get(LS.newsRssCustom) || (newsCfg.customRss||[]).join('\n') || "");
     const kwEn = (storage.get(LS.newsKeywordsEn) || "").trim();
     if ($("newsKeywordsEn")) $("newsKeywordsEn").value = kwEn;
@@ -1143,12 +1160,63 @@ function normalizeAndSortNews(items){
   return kept;
 }
 
+
+function decodeHtmlEntities(s){
+  const ta = document.createElement('textarea');
+  ta.innerHTML = String(s||'');
+  return ta.value || '';
+}
+function stripHtmlTags(s){
+  return String(s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+}
+function cleanSummary(s){
+  return stripHtmlTags(decodeHtmlEntities(s));
+}
+function splitKeywords(kwZh, kwEn){
+  const raw = [kwZh||'', kwEn||''].join(',');
+  return raw.split(/[，,;\n\t ]+/).map(s=>s.trim()).filter(Boolean).slice(0,80);
+}
+function scoreNewsItem(it, kws){
+  const hay = (String(it.title||'') + "\n" + String(it._clean||'') + "\n" + String(it.source||'')).toLowerCase();
+  const hits = [];
+  for (const k of kws){
+    const kk = String(k||'').toLowerCase();
+    if (kk && hay.includes(kk)) hits.push(k);
+  }
+  return { score: hits.length, hits: hits.slice(0,6) };
+}
 function renderNews(items, meta){
   const box = $("newsList");
   box.innerHTML = "";
-  const list = normalizeAndSortNews(items||[]);
+
+  const preset = $("newsSourcePreset")?.value || "mixed";
+  const days = Math.max(1, Math.min(30, Number($("newsDays")?.value || 7)));
+  const useKw = !!$("newsUseKeywords")?.checked;
+  const kws = splitKeywords($("newsKeywords")?.value, $("newsKeywordsEn")?.value);
+
+  let list = normalizeAndSortNews(items||[]);
+  // clean summary to avoid &lt;a href... expanding the layout
+  list = list.map(it => ({ ...it, _clean: cleanSummary(it.summary || "") }));
+
+  // keyword mode: filter/sort by relevance, but never empty the list
+  if (useKw && kws.length){
+    const scored = list.map(it => ({ it, s: scoreNewsItem(it, kws) }));
+    const matched = scored.filter(x => x.s.score > 0);
+    if (matched.length){
+      matched.sort((a,b)=> (b.s.score - a.s.score) || ((b.it._t||0)-(a.it._t||0)));
+      list = matched.map(x => ({ ...x.it, _hits: x.s.hits, _score: x.s.score }));
+      $("newsStatus").textContent = `✅ 相关模式：命中 ${list.length} 条（按相关度排序；近 ${days} 天）`;
+    } else {
+      $("newsStatus").textContent = `⚠️ 相关模式：关键词未命中，已回退显示最新要闻（近 ${days} 天）`;
+    }
+  }
+
+  // panel summary
+  const sumEl = $("newsPanelSummary");
+  if (sumEl) sumEl.textContent = `新闻列表（${list.length} 条；点击展开/收起）`;
+
   if (!list.length){
-    box.innerHTML = `<div class="mut small">近 ${Math.max(1, Math.min(30, Number($("newsDays")?.value || 7)))} 天暂无可用新闻（可能是RSS源近期不更新，或网络/跨域限制导致抓取失败）。</div>`;
+    box.innerHTML = `<div class="mut small">近 ${days} 天暂无可用新闻（可能是RSS源近期不更新，或网络/跨域限制导致抓取失败）。</div>`;
     return;
   }
 
@@ -1158,13 +1226,20 @@ function renderNews(items, meta){
     const tags = [];
     if (it.market) tags.push(`<span class="tag">${escapeHtml(it.market)}</span>`);
     if (it.sentiment) tags.push(`<span class="tag ${it.sentiment==='利好'?'good':it.sentiment==='利空'?'bad':''}">${escapeHtml(it.sentiment)}</span>`);
+    if (Array.isArray(it._hits) && it._hits.length){
+      tags.push(`<span class="tag warn" title="命中关键词">命中 ${it._hits.length}</span>`);
+    }
+
+    const sum = String(it._clean || "");
+    const sumShort = sum.length > 200 ? (sum.slice(0,200) + "…") : sum;
+
     div.innerHTML = `
       <div class="liHead">
         <div style="min-width:0;">
           <div class="liTitle">${escapeHtml(it.title||"-")}</div>
           <div class="mut small" style="margin-top:6px;">${escapeHtml(it.source||"")} · ${escapeHtml(it.pubDate||"")}</div>
           <div class="tags" style="margin-top:8px;">${tags.join("")}</div>
-          <div class="mut small" style="margin-top:8px;">${escapeHtml(it.summary||"").slice(0,240)}${(it.summary||"").length>240?"…":""}</div>
+          <div class="mut small newsSummary" style="margin-top:8px;">${escapeHtml(sumShort)}</div>
         </div>
         <div>${it.link ? `<a class="tag" href="${escapeAttr(it.link)}" target="_blank" rel="noopener">打开</a>` : ""}</div>
       </div>
@@ -1173,7 +1248,7 @@ function renderNews(items, meta){
   }
 }
 
-function clearNews(){
+function clearNews(function clearNews(){
   window.__news = [];
   storage.remove(LS.newsCache);
   if ($("newsList")) $("newsList").innerHTML = "";
@@ -1187,9 +1262,15 @@ function saveNewsConfig(silent=false){
       preset: $("newsSourcePreset")?.value || "mixed",
       limit: Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18))),
       days: Math.max(1, Math.min(30, Number($("newsDays")?.value || 7))),
+      useKeywords: !!$("newsUseKeywords")?.checked,
+      kwZh: String($("newsKeywords")?.value||"").trim(),
+      kwEn: String($("newsKeywordsEn")?.value||"").trim(),
       customRss: String($("rssCustom")?.value||"").split(/\n+/).map(s=>s.trim()).filter(Boolean)
     };
     storage.set(LS.news, JSON.stringify(cfg));
+    storage.set(LS.newsKeywords, cfg.kwZh);
+    storage.set(LS.newsKeywordsEn, cfg.kwEn);
+    storage.set(LS.newsRssCustom, cfg.customRss.join('\n'));
     if (!silent) toast("已保存新闻配置");
   }catch(e){
     console.error(e);
@@ -1197,19 +1278,22 @@ function saveNewsConfig(silent=false){
   }
 }
 
-async function fetchNews(){
+async function fetchNews(async function fetchNews(){
   try{
-    const base = (storage.get(LS.backend) || $("backend")?.value?.trim() || DEFAULT_BACKEND).replace(/\/+$/,"");
+    const base = (storage.get(LS.backend) || $("backend")?.value?.trim() || DEFAULT_BACKEND).replace(/\/+$/," ").trim();
     const preset = $("newsSourcePreset")?.value || "mixed";
     const limit = Math.max(5, Math.min(50, Number($("newsLimit")?.value || 18)));
     const days  = Math.max(1, Math.min(30, Number($("newsDays")?.value || 7)));
     const customRss = (preset==="custom" ? String($("rssCustom")?.value||"") : "")
       .split(/\n+/).map(s=>s.trim()).filter(Boolean);
 
+    const useKw = !!$("newsUseKeywords")?.checked;
+    const kwZh = String($("newsKeywords")?.value||"").trim();
+    const kwEn = String($("newsKeywordsEn")?.value||"").trim();
+
     $("newsStatus").textContent = `抓取中…（近 ${days} 天；上限 ${limit} 条）`;
 
-    // 不使用关键词：仅按时间抓取财经要闻
-    const r = await fetch(`${base}/api/news/rss`, {
+    const r = await fetch(`${base.replace(/\s+$/,'')}/api/news/rss`, {
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
@@ -1217,7 +1301,8 @@ async function fetchNews(){
         preset, source: preset,
         limit, days,
         customRss, rss: customRss,
-        kwZh:"", kwEn:""
+        kwZh: useKw ? kwZh : "",
+        kwEn: useKw ? kwEn : ""
       })
     });
     const j = await r.json();
@@ -1226,7 +1311,7 @@ async function fetchNews(){
     const items = Array.isArray(j.items) ? j.items : [];
     window.__news = items;
     renderNews(items);
-    $("newsStatus").textContent = `已抓取 ${items.length} 条（近 ${days} 天）`;
+    if ($("newsPanel")) $("newsPanel").open = true;
 
     // cache
     storage.set(LS.newsCache, JSON.stringify({ ok:true, at: Date.now(), items }));
