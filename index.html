@@ -1248,7 +1248,7 @@ function renderNews(items, meta){
   }
 }
 
-function clearNews(function clearNews(){
+function clearNews(){
   window.__news = [];
   storage.remove(LS.newsCache);
   if ($("newsList")) $("newsList").innerHTML = "";
@@ -1278,7 +1278,7 @@ function saveNewsConfig(silent=false){
   }
 }
 
-async function fetchNews(async function fetchNews(){
+async function fetchNews(){
   try{
     const base = (storage.get(LS.backend) || $("backend")?.value?.trim() || DEFAULT_BACKEND).replace(/\/+$/," ").trim();
     const preset = $("newsSourcePreset")?.value || "mixed";
