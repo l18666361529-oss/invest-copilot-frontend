@@ -1022,64 +1022,17 @@ async function refreshTech(){
       const key = String(p.code||"").toUpperCase();
       const it = byCode.get(key);
       if (!it || !it.ok) { p._techTags = []; continue; }
-const byCode = new Map((j.items||[]).map(it=>[String(it.code||it.symbol||"").toUpperCase(), it]));
-
-for (const p of window.positions){
-  const key = String(p.code||"").toUpperCase();
-  const it = byCode.get(key);
-  
-  if (!it || !it.ok) { 
-    p._techTags = []; 
-    continue; 
-  }
-
-  // ────────────────────────────────
-  // 这里是新增的部分：先保存原始数值
-  p._techRaw = it;
-
-  // 再把标签转成带数值的显示
-  p._techTags = (it.tags||[]).map(t => {
-    let display = t;  // 默认就是原来的文字
-    let extra = "";   // 用来放数值的部分
-
-    // 根据标签加不同的数值
-    if (t.includes("动量")) {
-      if (it.ret20 != null) extra = ` (${it.ret20.toFixed(1)}%)`;
+      p._techTags = (it.tags||[]).map(t=>{
+        const kind = (t.includes("偏热")||t.includes("过热")||t.includes("下行")||t.includes("转弱")) ? "warn"
+                   : (t.includes("上行")||t.includes("转强")||t.includes("偏冷")||t.includes("超卖")) ? "good"
+                   : "";
+        return { text: t, kind };
+      });
+      p._techRaw = it;
     }
-    else if (t.includes("趋势")) {
-      if (it.sma20 != null && it.sma60 != null) {
-        extra = ` (SMA20 ${it.sma20.toFixed(2)} / SMA60 ${it.sma60.toFixed(2)})`;
-      }
-    }
-    else if (t.includes("RSI")) {
-      if (it.rsi14 != null) extra = ` (${it.rsi14.toFixed(1)})`;
-    }
-    else if (t.includes("MACD")) {
-      if (it.macd != null) {
-        extra = ` (${it.macd.toFixed(3)})`;
-        // 如果你想要更详细，可以改成：
-        // extra = ` (MACD ${it.macd.toFixed(3)} / hist ${it.hist?.toFixed(3)||'—'})`;
-      }
-    }
-
-    // 颜色分类（你原来的逻辑，保持不变）
-    const kind = (t.includes("偏热")||t.includes("过热")||t.includes("下行")||t.includes("转弱")) ? "warn"
-               : (t.includes("上行")||t.includes("转强")||t.includes("偏冷")||t.includes("超卖")) ? "good"
-               : "";
-
-    return { 
-      text: display + extra,   // ← 这里把数值加到文字后面
-      kind 
-    };
-  });
-
-  // 如果你想数值单独一行显示（更清晰），可以用下面这行代替上面 return 那一行：
-  // return { text: t, extra: extra, kind };   // 然后在 renderPositions 里再处理 extra
-}
-
-persistPositions();
-renderPositions();
-toast("技术指标已更新");
+    persistPositions();
+    renderPositions();
+    toast("技术指标已更新");
   }catch(e){
     alert("技术指标接口不可用：" + (e?.message||e));
   }
