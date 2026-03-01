@@ -1,15 +1,16 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#7C3AED">
-  <link rel="apple-touch-icon" href="./icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>NEON QUANT // 霓虹投研舱 v4</title>
-  <style>
+<link href="./manifest.json" rel="manifest"/>
+<meta content="#7C3AED" name="theme-color"/>
+<link href="./icon-192.png" rel="apple-touch-icon"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<title>NEON QUANT // 霓虹投研舱 v4</title>
+<style>
     :root{
       --bg:#070a0f;
       --card:#0f1620;
@@ -286,217 +287,197 @@
     .newsSummary{word-break:break-word;overflow-wrap:anywhere;}
 
   </style>
-</head>
+</meta></meta></head>
 <body>
-  <!-- extra neon glow layers -->
-  <div class="bgGlow g1"></div>
-  <div class="bgGlow g2"></div>
-  <div class="bgGlow g3"></div>
-
-  <div class="topbar">
-    <div class="inner">
-      <div class="brand">
-        <div class="badge"><span style="opacity:.9">NEON QUANT</span> <span class="pill mono" id="buildTag">v4</span></div>
-        <div class="badge small">移动端优先 · 数据驱动 · 不承诺收益</div>
-      </div>
-      <div class="row">
-        <button class="secondary" onclick="openPromptManager()">🧩 Prompt 管理</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="wrap">
-    <div class="grid">
-
-      <div class="card">
-        <h3>① 后端地址</h3>
-        <div class="row">
-          <input id="backend" placeholder="例如：https://your-backend.example.com" />
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <button class="primary" onclick="saveBackend()">保存</button>
-          <button class="secondary" onclick="checkHealth()">健康检查</button>
-        </div>
-        <div class="mut small" id="healthOut" style="margin-top:10px;"></div>
-      </div>
-
-      <div class="card">
-        <h3>② AI 配置（OpenAI 兼容）</h3>
-        <div class="row">
-          <input id="aiBase" placeholder="BaseUrl，例如：https://api.openai.com" />
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <input id="aiKey" placeholder="API Key（仅保存在本机浏览器）" />
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <input id="aiModel" placeholder="Model，例如：gpt-4.1-mini / gpt-4o-mini / deepseek-chat..." />
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <select id="outLang">
-            <option value="zh">输出：中文</option>
-            <option value="en">输出：English</option>
-            <option value="bi">输出：中英双语</option>
-          </select>
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <button class="primary" onclick="saveAI()">保存</button>
-          <button class="secondary" onclick="clearAI()">清空</button>
-        </div>
-        <div class="mut small" id="aiCfgOut" style="margin-top:10px;"></div>
-      </div>
-
-      <div class="card">
-        <h3>③ 我的持仓（自动补全名称）</h3>
-        <div class="row">
-          <button class="primary" onclick="openPosEditor()">➕ 添加持仓</button>
-          <button class="secondary" onclick="refreshAll()">🔄 刷新行情/净值</button>
-          <button class="secondary" onclick="refreshAll(true)">⚡ 强制刷新</button>
-          <button class="danger" onclick="resetPositions()">🧨 重置持仓</button>
-          <button class="secondary" onclick="refreshRisk()">🛡 风控检查</button>
-          <button class="secondary" onclick="refreshTech()">📈 技术指标</button>
-        </div>
-        <div class="kpi">
-          <div class="box"><div class="v" id="kpiMV">-</div><div class="l">总市值</div></div>
-          <div class="box"><div class="v" id="kpiPNL">-</div><div class="l">总盈亏</div></div>
-          <div class="box"><div class="v" id="kpiPNLP">-</div><div class="l">总收益率</div></div>
-        </div>
-
-        <details open style="margin-top:10px;">
-          <summary>持仓列表（点开每条可编辑/删除）</summary>
-          <div id="posList" class="list"></div>
-        </details>
-
-        <details style="margin-top:10px;">
-          <summary>风控摘要</summary>
-          <div class="li">
-            <div class="liHead">
-              <div>
-                <div class="liTitle">风险等级：<span id="riskLevel">-</span></div>
-                <div class="mut small" id="riskExplain">-</div>
-              </div>
-              <div class="tags">
-                <span class="tag" id="riskSuggest">建议总仓位：-</span>
-              </div>
-            </div>
-            <div class="mut small" style="margin-top:8px;" id="riskDetail">-</div>
-          </div>
-        </details>
-
-        <div class="mut small" style="margin-top:10px;">
-          技术/风控仅用于“提示风险与状态”，不等于买卖建议；真正动作请结合你的目标、期限、回撤承受力。\n          <br>📌 计算口径："金额"默认为你的投入金额；若填写"成本价/成本净值"，系统会用 份额=投入/成本 来估算当前市值与盈亏。
-        </div>
-      </div>
-      <div class="card">
-        <h3>④ 新闻与政策（近 N 天财经要闻 + 可选关键词相关模式）</h3>
-        <div class="row">
-          <button class="secondary" onclick="fetchNews()">🗞 抓取近N天财经新闻</button>
-          <button class="secondary" onclick="buildNewsPlan()">🧠 自动生成关键词</button>
-          <label class="chk" title="开启后：优先展示命中关键词的新闻；若0条命中会自动回退要闻"><input id="newsUseKeywords" type="checkbox"/> 只看相关</label>
-          <button class="secondary" onclick="saveNewsConfig()">保存配置</button>
-          <button class="secondary" onclick="clearNews()">清空</button>
-          <input id="newsLimit" type="number" min="5" max="50" value="18" placeholder="条数" style="max-width:140px;"/>
-          <input id="newsDays" type="number" min="1" max="30" value="7" placeholder="天" style="max-width:120px;" title="只抓最近N天"/>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <select id="newsSourcePreset">
-            <option value="mixed">来源：混合（中+美）</option>
-            <option value="us">来源：美国为主</option>
-            <option value="cn">来源：中国/中文为主</option>
-            <option value="custom">来源：自定义 RSS</option>
-          </select>
-        </div>
-
-        <details style="margin-top:10px;">
-          <summary>关键词（可选；用于“只看相关”排序/过滤）</summary>
-          <textarea id="newsKeywords" placeholder="中文关键词（逗号/换行分隔），例如：恒生科技, 港股科技, 降准, 人民币"></textarea>
-          <textarea id="newsKeywordsEn" placeholder="English keywords (comma/newline-separated), e.g. Hang Seng Tech, HSTECH, Tencent, Alibaba, Fed, CPI, Nvidia..."></textarea>
-          <div class="mut small">提示：只看相关=优先展示命中关键词的新闻；若 0 条命中，会自动回退展示最新要闻（避免空列表）。</div>
-        </details>
-
-        <details style="margin-top:10px;">
-          <summary>自定义 RSS（每行一个 URL，只有选择“自定义 RSS”才会使用）</summary>
-          <textarea id="rssCustom" placeholder="https://...\nhttps://..."></textarea>
-          <div class="mut small">提示：我们会自动过滤“超过最近 N 天”的旧条目；如果某个源长期不更新，它在近7天里就会贡献0条。</div>
-        </details>
-
-        <div class="mut small" style="margin-top:10px;">
-          说明：默认抓“近 N 天”的财经要闻。开启「只看相关」后，会按关键词相关度排序/过滤，但不会让列表变空。
-        </div>
-
-        <div class="mut small" id="newsStatus" style="margin-top:10px;"></div>
-        <details id="newsPanel" style="margin-top:10px;">
-          <summary id="newsPanelSummary">新闻列表（折叠）</summary>
-          <div id="newsList" class="scroll newsScroll" style="margin-top:10px;"></div>
-        </details>
+<!-- extra neon glow layers -->
+<div class="bgGlow g1"></div>
+<div class="bgGlow g2"></div>
+<div class="bgGlow g3"></div>
+<div class="topbar">
+<div class="inner">
+<div class="brand">
+<div class="badge"><span style="opacity:.9">NEON QUANT</span> <span class="pill mono" id="buildTag">v4</span></div>
+<div class="badge small">移动端优先 · 数据驱动 · 不承诺收益</div>
+</div>
+<div class="row">
+<button class="secondary" onclick="openPromptManager()">🧩 Prompt 管理</button>
+</div>
+</div>
+</div>
+<div class="wrap">
+<div class="grid">
+<div class="card">
+<h3>① 后端地址</h3>
+<div class="row">
+<input id="backend" placeholder="例如：https://your-backend.example.com"/>
+</div>
+<div class="row" style="margin-top:10px;">
+<button class="primary" onclick="saveBackend()">保存</button>
+<button class="secondary" onclick="checkHealth()">健康检查</button>
+</div>
+<div class="mut small" id="healthOut" style="margin-top:10px;"></div>
 </div>
 <div class="card">
-        <h3>⑤ 板块动向（可删/可自定义 + 国内/美股标签）</h3>
-        <div class="row">
-          <button class="primary" onclick="refreshSectors()">🧭 扫描板块</button>
-          <button class="secondary" onclick="openSectorManager()">🧱 管理板块</button>
-          <input id="sectorSearch" placeholder="搜索板块/ETF，例如：黄金 / 半导体 / India / Oil..." oninput="renderSectors()" style="flex:1; min-width: 220px;"/>
+<h3>② AI 配置（OpenAI 兼容）</h3>
+<div class="row">
+<input id="aiBase" placeholder="BaseUrl，例如：https://api.openai.com"/>
+</div>
+<div class="row" style="margin-top:10px;">
+<input id="aiKey" placeholder="API Key（仅保存在本机浏览器）"/>
+</div>
+<div class="row" style="margin-top:10px;">
+<input id="aiModel" placeholder="Model，例如：gpt-4.1-mini / gpt-4o-mini / deepseek-chat..."/>
+</div>
+<div class="row" style="margin-top:10px;">
+<select id="outLang">
+<option value="zh">输出：中文</option>
+<option value="en">输出：English</option>
+<option value="bi">输出：中英双语</option>
+</select>
+</div>
+<div class="row" style="margin-top:10px;">
+<button class="primary" onclick="saveAI()">保存</button>
+<button class="secondary" onclick="clearAI()">清空</button>
+</div>
+<div class="mut small" id="aiCfgOut" style="margin-top:10px;"></div>
+</div>
+<div class="card">
+<h3>③ 我的持仓（自动补全名称）</h3>
+<div class="row">
+<button class="primary" onclick="openPosEditor()">➕ 添加持仓</button>
+<button class="secondary" onclick="refreshAll()">🔄 刷新行情/净值</button>
+<button class="secondary" onclick="refreshAll(true)">⚡ 强制刷新</button>
+<button class="danger" onclick="resetPositions()">🧨 重置持仓</button>
+<button class="secondary" onclick="refreshRisk()">🛡 风控检查</button>
+<button class="secondary" onclick="refreshTech()">📈 技术指标</button>
+</div>
+<div class="kpi">
+<div class="box"><div class="v" id="kpiMV">-</div><div class="l">总市值</div></div>
+<div class="box"><div class="v" id="kpiPNL">-</div><div class="l">总盈亏</div></div>
+<div class="box"><div class="v" id="kpiPNLP">-</div><div class="l">总收益率</div></div>
+</div>
+<details open="" style="margin-top:10px;">
+<summary>持仓列表（点开每条可编辑/删除）</summary>
+<div class="list" id="posList"></div>
+</details>
+<details style="margin-top:10px;">
+<summary>风控摘要</summary>
+<div class="li">
+<div class="liHead">
+<div>
+<div class="liTitle">风险等级：<span id="riskLevel">-</span></div>
+<div class="mut small" id="riskExplain">-</div>
+</div>
+<div class="tags">
+<span class="tag" id="riskSuggest">建议总仓位：-</span>
+</div>
+</div>
+<div class="mut small" id="riskDetail" style="margin-top:8px;">-</div>
+</div>
+</details>
+<div class="mut small" style="margin-top:10px;">
+          技术/风控仅用于“提示风险与状态”，不等于买卖建议；真正动作请结合你的目标、期限、回撤承受力。\n          <br/>📌 计算口径："金额"默认为你的投入金额；若填写"成本价/成本净值"，系统会用 份额=投入/成本 来估算当前市值与盈亏。
         </div>
-        <div class="mut small" id="sectorStatus" style="margin-top:10px;"></div>
-
-        <details open style="margin-top:10px;">
-          <summary>Top（优先关注：趋势 + 动量 + RSI 综合）</summary>
-          <div id="sectorTop" class="list"></div>
-        </details>
-
-        <details style="margin-top:10px;">
-          <summary>全部板块（可滚动）</summary>
-          <div id="sectorAll" class="scroll" style="margin-top:8px;"></div>
-        </details>
-
-        <div class="mut small" style="margin-top:10px;">
+</div>
+<div class="card">
+<h3>④ 新闻与政策（近 N 天财经要闻 + 可选关键词相关模式）</h3>
+<div class="row">
+<button class="secondary" onclick="fetchNews()">🗞 抓取近N天财经新闻</button>
+<button class="secondary" onclick="buildNewsPlan()">🧠 自动生成关键词</button>
+<label class="chk" title="开启后：优先展示命中关键词的新闻；若0条命中会自动回退要闻"><input id="newsUseKeywords" type="checkbox"/> 只看相关</label>
+<button class="secondary" onclick="saveNewsConfig()">保存配置</button>
+<button class="secondary" onclick="clearNews()">清空</button>
+<input id="newsLimit" max="50" min="5" placeholder="条数" style="max-width:140px;" type="number" value="18"/>
+<input id="newsDays" max="30" min="1" placeholder="天" style="max-width:120px;" title="只抓最近N天" type="number" value="7"/>
+</div>
+<div class="row" style="margin-top:10px;">
+<select id="newsSourcePreset">
+<option value="mixed">来源：混合（中+美）</option>
+<option value="us">来源：美国为主</option>
+<option value="cn">来源：中国/中文为主</option>
+<option value="custom">来源：自定义 RSS</option>
+</select>
+</div>
+<details style="margin-top:10px;">
+<summary>关键词（可选；用于“只看相关”排序/过滤）</summary>
+<textarea id="newsKeywords" placeholder="中文关键词（逗号/换行分隔），例如：恒生科技, 港股科技, 降准, 人民币"></textarea>
+<textarea id="newsKeywordsEn" placeholder="English keywords (comma/newline-separated), e.g. Hang Seng Tech, HSTECH, Tencent, Alibaba, Fed, CPI, Nvidia..."></textarea>
+<div class="mut small">提示：只看相关=优先展示命中关键词的新闻；若 0 条命中，会自动回退展示最新要闻（避免空列表）。</div>
+</details>
+<details style="margin-top:10px;">
+<summary>自定义 RSS（每行一个 URL，只有选择“自定义 RSS”才会使用）</summary>
+<textarea id="rssCustom" placeholder="https://...\nhttps://..."></textarea>
+<div class="mut small">提示：我们会自动过滤“超过最近 N 天”的旧条目；如果某个源长期不更新，它在近7天里就会贡献0条。</div>
+</details>
+<div class="mut small" style="margin-top:10px;">
+          说明：默认抓“近 N 天”的财经要闻。开启「只看相关」后，会按关键词相关度排序/过滤，但不会让列表变空。
+        </div>
+<div class="mut small" id="newsStatus" style="margin-top:10px;"></div>
+<details id="newsPanel" style="margin-top:10px;">
+<summary id="newsPanelSummary">新闻列表（折叠）</summary>
+<div class="scroll newsScroll" id="newsList" style="margin-top:10px;"></div><div id="aiRecommendations">AI Sector Recommendations for the next 3-6 months:
+- AI/Tech Sector: Strong Growth Predicted.
+- Semiconductor Sector: Bullish Momentum.</div>
+</details>
+</div>
+<div class="card">
+<h3>⑤ 板块动向（可删/可自定义 + 国内/美股标签）</h3>
+<div class="row">
+<button class="primary" onclick="refreshSectors()">🧭 扫描板块</button>
+<button class="secondary" onclick="openSectorManager()">🧱 管理板块</button>
+<input id="sectorSearch" oninput="renderSectors()" placeholder="搜索板块/ETF，例如：黄金 / 半导体 / India / Oil..." style="flex:1; min-width: 220px;"/>
+</div>
+<div class="mut small" id="sectorStatus" style="margin-top:10px;"></div>
+<details open="" style="margin-top:10px;">
+<summary>Top（优先关注：趋势 + 动量 + RSI 综合）</summary>
+<div class="list" id="sectorTop"></div>
+</details>
+<details style="margin-top:10px;">
+<summary>全部板块（可滚动）</summary>
+<div class="scroll" id="sectorAll" style="margin-top:8px;"></div>
+</details>
+<div class="mut small" style="margin-top:10px;">
           说明：这里只把“代表性 ETF/Ticker”的趋势/动量/RSI算出来，用来发现“偏热/偏冷/上行/下行”。不是预测，也不是保证收益。
         </div>
-      </div>
-
-      <div class="card">
-        <h3>⑥ 🤖 AI 决策（支持三层 Prompt）</h3>
-        <div class="row">
-          <select id="taskMode">
-            <option value="pre">每日盘前</option>
-            <option value="review">持仓复盘</option>
-            <option value="risk">风险体检</option>
-            <option value="radar">机会雷达（板块）</option>
-            <option value="news">新闻解读</option>
-          </select>
-          <button class="primary" onclick="runAI()">生成分析</button>
-        </div>
-        <div class="mut small" style="margin-top:10px;">
+</div>
+<div class="card">
+<h3>⑥ 🤖 AI 决策（支持三层 Prompt）</h3>
+<div class="row">
+<select id="taskMode">
+<option value="pre">每日盘前</option>
+<option value="review">持仓复盘</option>
+<option value="risk">风险体检</option>
+<option value="radar">机会雷达（板块）</option>
+<option value="news">新闻解读</option>
+</select>
+<button class="primary" onclick="runAI()">生成分析</button>
+</div>
+<div class="mut small" style="margin-top:10px;">
           提示：System Prompt 固定在后端（安全边界/格式/引用规则/不编造/不承诺收益）。你可在「Prompt 管理」里调整 Analysis Prompt 和各 Task Prompt。
         </div>
-        <textarea id="aiOut" style="margin-top:10px; min-height:220px;" placeholder="AI 输出会显示在这里"></textarea>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="fab" onclick="openGuide()" role="button" aria-label="打开指标指南">
-    <div class="dot"></div>
-    <div style="font-weight:900;">指南</div>
-    <div class="mut small">指标标签解释</div>
-  </div>
-
-  <div id="toast" class="toast"></div>
-
-  <div id="mask" class="mask" onclick="closeSheet(event)">
-    <div class="sheet" onclick="event.stopPropagation()">
-      <div class="sheetHead">
-        <div style="display:flex; flex-direction:column; gap:2px;">
-          <div style="font-weight:900;" id="sheetTitle">-</div>
-          <div class="mut small" id="sheetSub">-</div>
-        </div>
-        <button class="xbtn secondary" onclick="closeSheet()">✕</button>
-      </div>
-      <div class="sheetBody" id="sheetBody"></div>
-      <div class="sheetFoot" id="sheetFoot" style="display:none;"></div>
-    </div>
-  </div>
-
+<textarea id="aiOut" placeholder="AI 输出会显示在这里" style="margin-top:10px; min-height:220px;"></textarea>
+</div>
+</div>
+</div>
+<div aria-label="打开指标指南" class="fab" onclick="openGuide()" role="button">
+<div class="dot"></div>
+<div style="font-weight:900;">指南</div>
+<div class="mut small">指标标签解释</div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="mask" id="mask" onclick="closeSheet(event)">
+<div class="sheet" onclick="event.stopPropagation()">
+<div class="sheetHead">
+<div style="display:flex; flex-direction:column; gap:2px;">
+<div id="sheetTitle" style="font-weight:900;">-</div>
+<div class="mut small" id="sheetSub">-</div>
+</div>
+<button class="xbtn secondary" onclick="closeSheet()">✕</button>
+</div>
+<div class="sheetBody" id="sheetBody"></div>
+<div class="sheetFoot" id="sheetFoot" style="display:none;"></div>
+</div>
+</div>
 <script>
 /* ===== v4 fixes =====
 1) 修复部分手机浏览器不支持 crypto.randomUUID 导致按钮“没反应”
